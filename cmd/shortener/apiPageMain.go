@@ -1,0 +1,64 @@
+package main
+
+import (
+	"io"
+	"math/rand"
+	"net/http"
+)
+
+/*
+Эндпоинт с методом POST и путём /. Сервер принимает в теле запроса строку URL как text/plain и возвращает ответ с кодом 201 и сокращённым URL как text/plain.
+
+Пример запроса к серверу:
+POST / HTTP/1.1
+Host: localhost:8080
+Content-Type: text/plain
+
+https://practicum.yandex.ru/
+
+Пример ответа от сервера:
+HTTP/1.1 201 Created
+Content-Type: text/plain
+Content-Length: 30
+
+http://localhost:8080/EwHXdJfB
+*/
+func apiPageMain(res http.ResponseWriter, req *http.Request) {
+	// На любой некорректный запрос сервер должен возвращать ответ с кодом 400.
+	if req.Method != http.MethodPost {
+		http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+	}
+
+	_, err := io.ReadAll(req.Body)
+	//body, err := io.ReadAll(req.Body) // body - тут собственно урл который нужно сократить
+	if err != nil {
+		panic(err)
+	}
+
+	scheme := req.URL.Scheme
+	if len(scheme) == 0 {
+		scheme = "http"
+	}
+
+	host := req.URL.Host
+	if len(host) == 0 {
+		host = "localhost"
+	}
+
+	// TODO save url and id
+	path := req.URL.Path
+	id := RandStringRunes(10)
+
+	res.WriteHeader(http.StatusCreated)
+	res.Write([]byte(scheme + "://" + host + path + id))
+}
+
+func RandStringRunes(n int) string {
+	letterRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
