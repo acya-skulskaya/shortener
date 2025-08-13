@@ -20,11 +20,12 @@ func apiPageById(res http.ResponseWriter, req *http.Request) {
 	// На любой некорректный запрос сервер должен возвращать ответ с кодом 400.
 	if req.Method != http.MethodGet {
 		http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
 	}
 
 	id := req.PathValue("id")
 	// TODO get original url by id
-	url := "http://original-url-with-id/" + id
+	url := "http://original.url.with.id/" + id
 
 	//res.WriteHeader(http.StatusTemporaryRedirect)
 	//res.Header().Add("Location", "http://original-url-with-id/"+id)

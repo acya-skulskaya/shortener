@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"math"
 	"math/rand"
 	"net/http"
 )
@@ -27,6 +28,7 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 	// На любой некорректный запрос сервер должен возвращать ответ с кодом 400.
 	if req.Method != http.MethodPost {
 		http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
 	}
 
 	_, err := io.ReadAll(req.Body)
@@ -49,12 +51,17 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
 	id := RandStringRunes(10)
 
+	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
 	res.Write([]byte(scheme + "://" + host + path + id))
 }
 
 func RandStringRunes(n int) string {
 	letterRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+	if n < 0 {
+		n = int(math.Abs(float64(n)))
+	}
 
 	b := make([]rune, n)
 	for i := range b {
