@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func Test_apiPageById(t *testing.T) {
+func Test_apiPageByID(t *testing.T) {
 	type want struct {
 		code        int
 		response    string
@@ -61,9 +61,11 @@ func Test_apiPageById(t *testing.T) {
 			request := httptest.NewRequest(test.method, "/ZYzivdwTSw", nil)
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
-			apiPageById(w, request)
+			apiPageByID(w, request)
 
 			res := w.Result()
+			defer res.Body.Close()
+
 			// проверяем код ответа
 			assert.Equal(t, test.want.code, res.StatusCode)
 			// проверяем Content-Type
@@ -71,7 +73,7 @@ func Test_apiPageById(t *testing.T) {
 			// TODO проверяем Location по id
 			//assert.Equal(t, test.want.headerLocation, res.Header.Get("Location"))
 			// получаем и проверяем тело запроса
-			//defer res.Body.Close()
+
 			//resBody, err := io.ReadAll(res.Body)
 			//
 			//require.NoError(t, err)

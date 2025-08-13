@@ -31,8 +31,8 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	_, err := io.ReadAll(req.Body)
-	//body, err := io.ReadAll(req.Body) // body - тут собственно урл который нужно сократить
+	//_, err := io.ReadAll(req.Body)
+	body, err := io.ReadAll(req.Body) // body - тут собственно урл который нужно сократить
 	if err != nil {
 		panic(err)
 	}
@@ -51,6 +51,10 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
 	id := RandStringRunes(10)
 
+	Urls[id] = string(body)
+	//fmt.Println("apiPageMain")
+	//fmt.Println(id)
+	//fmt.Println(Urls)
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
 	res.Write([]byte(scheme + "://" + host + path + id))
