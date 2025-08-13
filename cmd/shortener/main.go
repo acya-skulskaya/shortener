@@ -9,7 +9,7 @@ func main() {
 	mux.HandleFunc(`/{id}/`, apiPageById)
 	mux.HandleFunc(`/`, apiPageMain)
 
-	err := http.ListenAndServe(`:8080`, mux)
+	err := http.ListenAndServe(`:80`, mux)
 
 	if err != nil {
 		panic(err)
