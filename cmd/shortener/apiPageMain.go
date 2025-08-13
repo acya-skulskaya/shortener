@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"math"
 	"math/rand"
@@ -48,17 +47,22 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 		host = "localhost"
 	}
 
+	port := req.URL.Port()
+	if port == "80" {
+		port = ""
+	} else {
+		port = ":8080"
+	}
+
 	// TODO save url and id
 	path := req.URL.Path
 	id := RandStringRunes(10)
 
 	ShortUrls[id] = string(body)
-	fmt.Println("apiPageMain")
-	fmt.Println(id)
-	fmt.Println(ShortUrls)
+
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte(scheme + "://" + host + path + id))
+	res.Write([]byte(scheme + "://" + host + port + path + id))
 }
 
 func RandStringRunes(n int) string {

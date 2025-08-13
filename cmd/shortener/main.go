@@ -13,7 +13,7 @@ func main() {
 	mux.HandleFunc(`/{id}`, apiPageByID)
 	mux.HandleFunc(`/`, apiPageMain)
 
-	err := http.ListenAndServe(`:80`, mux)
+	err := http.ListenAndServe(`:8080`, mux)
 	//err := http.ListenAndServe(`localhost`, mux)
 
 	if err != nil {
