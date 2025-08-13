@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"math"
 	"math/rand"
@@ -51,10 +52,10 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
 	id := RandStringRunes(10)
 
-	Urls[id] = string(body)
-	//fmt.Println("apiPageMain")
-	//fmt.Println(id)
-	//fmt.Println(Urls)
+	ShortUrls[id] = string(body)
+	fmt.Println("apiPageMain")
+	fmt.Println(id)
+	fmt.Println(ShortUrls)
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
 	res.Write([]byte(scheme + "://" + host + path + id))

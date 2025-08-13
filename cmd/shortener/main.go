@@ -4,16 +4,17 @@ import (
 	"net/http"
 )
 
-var Urls map[string]string
+var ShortUrls map[string]string
 
 func main() {
-	Urls = make(map[string]string)
+	ShortUrls = make(map[string]string)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(`/{id}`, apiPageByID)
 	mux.HandleFunc(`/`, apiPageMain)
 
-	err := http.ListenAndServe(`:80`, mux)
+	err := http.ListenAndServe(`:8080`, mux)
+	//err := http.ListenAndServe(`localhost`, mux)
 
 	if err != nil {
 		panic(err)

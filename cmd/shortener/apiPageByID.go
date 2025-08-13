@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -24,10 +25,10 @@ func apiPageByID(res http.ResponseWriter, req *http.Request) {
 	}
 
 	id := req.PathValue("id")
-	url := Urls[id]
-	//fmt.Println("apiPageByID")
-	//fmt.Println(id)
-	//fmt.Println(Urls)
+	url := ShortUrls[id]
+	fmt.Println("apiPageByID")
+	fmt.Println(id)
+	fmt.Println(ShortUrls)
 	//res.WriteHeader(http.StatusTemporaryRedirect)
 	res.Header().Set("Location", url)
 	res.Header().Add("Location", url)
