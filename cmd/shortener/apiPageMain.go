@@ -58,6 +58,10 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
 	id := RandStringRunes(10)
 
+	if ShortUrls == nil {
+		ShortUrls = make(map[string]string)
+	}
+
 	ShortUrls[id] = string(body)
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
