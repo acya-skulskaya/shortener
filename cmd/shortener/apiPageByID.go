@@ -25,6 +25,7 @@ func apiPageByID(res http.ResponseWriter, req *http.Request) {
 	}
 
 	id := chi.URLParam(req, "id")
+	// TODO get url from db
 	url := ShortUrls[id]
 	//res.WriteHeader(http.StatusTemporaryRedirect)
 	//res.Header().Set("Location", url)
