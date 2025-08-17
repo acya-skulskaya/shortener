@@ -43,7 +43,7 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte(config.Values.UrlAddress + "/" + id))
+	res.Write([]byte(config.Values.URLAddress + "/" + id))
 }
 
 func RandStringRunes(n int) string {
