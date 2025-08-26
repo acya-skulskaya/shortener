@@ -1,6 +1,8 @@
 package main
 
+import "C"
 import (
+	"github.com/acya-skulskaya/shortener/internal/config"
 	"io"
 	"math"
 	"math/rand"
@@ -31,42 +33,20 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	//_, err := io.ReadAll(req.Body)
-	body, err := io.ReadAll(req.Body) // body - тут собственно урл который нужно сократить
+	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		panic(err)
+		http.Error(res, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
+		return
 	}
 
-	scheme := req.URL.Scheme
-	if len(scheme) == 0 {
-		scheme = "http"
-	}
-
-	host := req.URL.Host
-	if len(host) == 0 {
-		host = "localhost"
-	}
-
-	port := req.URL.Port()
-	if port == "80" {
-		port = ""
-	} else {
-		port = ":8080"
-	}
-
-	// TODO save url and id
-	path := req.URL.Path
+	// TODO save url and id in db
 	id := RandStringRunes(10)
-
-	if ShortUrls == nil {
-		ShortUrls = make(map[string]string)
-	}
-
-	ShortUrls[id] = string(body)
+	Cont.add(id, string(body))
+	//ShortUrls[id] = string(body)
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte(scheme + "://" + host + port + path + id))
+	res.Write([]byte(config.Values.URLAddress + "/" + id))
 }
 
 func RandStringRunes(n int) string {
