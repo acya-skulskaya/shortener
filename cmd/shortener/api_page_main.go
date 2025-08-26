@@ -1,5 +1,6 @@
 package main
 
+import "C"
 import (
 	"github.com/acya-skulskaya/shortener/internal/config"
 	"io"
@@ -34,12 +35,14 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		panic(err)
+		http.Error(res, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
+		return
 	}
 
 	// TODO save url and id in db
 	id := RandStringRunes(10)
-	ShortUrls[id] = string(body)
+	Cont.add(id, string(body))
+	//ShortUrls[id] = string(body)
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
