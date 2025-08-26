@@ -23,8 +23,8 @@ func Init() {
 		cfg.ServerAddress = serverAddress
 	}
 
-	if baseUrl := os.Getenv("BASE_URL"); baseUrl != "" {
-		cfg.URLAddress = baseUrl
+	if baseURL := os.Getenv("BASE_URL"); baseURL != "" {
+		cfg.URLAddress = baseURL
 	}
 
 	Values = cfg
