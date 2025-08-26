@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/go-chi/chi"
 	"net/http"
 )
 
@@ -9,12 +10,12 @@ var ShortUrls map[string]string
 func main() {
 	ShortUrls = make(map[string]string)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc(`/{id}`, apiPageByID)
-	mux.HandleFunc(`/`, apiPageMain)
+	router := chi.NewRouter()
 
-	err := http.ListenAndServe(`:8080`, mux)
-	//err := http.ListenAndServe(`localhost`, mux)
+	router.Post("/", apiPageMain)
+	router.Get("/{id}", apiPageByID)
+
+	err := http.ListenAndServe(":8080", router)
 
 	if err != nil {
 		panic(err)

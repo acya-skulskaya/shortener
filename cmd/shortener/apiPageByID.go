@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/go-chi/chi"
 	"net/http"
 )
 
@@ -23,9 +24,8 @@ func apiPageByID(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	id := req.PathValue("id")
+	id := chi.URLParam(req, "id")
 	url := ShortUrls[id]
-
 	//res.WriteHeader(http.StatusTemporaryRedirect)
 	//res.Header().Set("Location", url)
 	//	res.Header().Add("Location", url)
