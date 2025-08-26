@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"math"
 	"math/rand"
 	"net/http"
 )
@@ -27,10 +28,11 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 	// На любой некорректный запрос сервер должен возвращать ответ с кодом 400.
 	if req.Method != http.MethodPost {
 		http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
 	}
 
-	_, err := io.ReadAll(req.Body)
-	//body, err := io.ReadAll(req.Body) // body - тут собственно урл который нужно сократить
+	//_, err := io.ReadAll(req.Body)
+	body, err := io.ReadAll(req.Body) // body - тут собственно урл который нужно сократить
 	if err != nil {
 		panic(err)
 	}
@@ -45,16 +47,34 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 		host = "localhost"
 	}
 
+	port := req.URL.Port()
+	if port == "80" {
+		port = ""
+	} else {
+		port = ":8080"
+	}
+
 	// TODO save url and id
 	path := req.URL.Path
 	id := RandStringRunes(10)
 
+	if ShortUrls == nil {
+		ShortUrls = make(map[string]string)
+	}
+
+	ShortUrls[id] = string(body)
+
+	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte(scheme + "://" + host + path + id))
+	res.Write([]byte(scheme + "://" + host + port + path + id))
 }
 
 func RandStringRunes(n int) string {
 	letterRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+	if n < 0 {
+		n = int(math.Abs(float64(n)))
+	}
 
 	b := make([]rune, n)
 	for i := range b {

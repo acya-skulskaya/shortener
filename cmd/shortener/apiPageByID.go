@@ -16,17 +16,18 @@ Content-Type: text/plain
 HTTP/1.1 307 Temporary Redirect
 Location: https://practicum.yandex.ru/
 */
-func apiPageById(res http.ResponseWriter, req *http.Request) {
+func apiPageByID(res http.ResponseWriter, req *http.Request) {
 	// На любой некорректный запрос сервер должен возвращать ответ с кодом 400.
 	if req.Method != http.MethodGet {
 		http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
 	}
 
 	id := req.PathValue("id")
-	// TODO get original url by id
-	url := "http://original-url-with-id/" + id
+	url := ShortUrls[id]
 
 	//res.WriteHeader(http.StatusTemporaryRedirect)
-	//res.Header().Add("Location", "http://original-url-with-id/"+id)
+	//res.Header().Set("Location", url)
+	//	res.Header().Add("Location", url)
 	http.Redirect(res, req, url, http.StatusTemporaryRedirect)
 }
