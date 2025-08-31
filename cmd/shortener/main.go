@@ -2,10 +2,14 @@ package main
 
 import (
 	"github.com/acya-skulskaya/shortener/internal/config"
-	"github.com/go-chi/chi"
+	"github.com/acya-skulskaya/shortener/internal/middleware"
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 	"net/http"
 	"sync"
 )
+
+var sugar zap.SugaredLogger
 
 type Container struct {
 	mu        sync.Mutex
@@ -27,9 +31,14 @@ func main() {
 	config.Init()
 
 	router := chi.NewRouter()
+
+	router.Use(middleware.RequestLogger)
+
 	router.Post("/", apiPageMain)
 	router.Get("/{id}", apiPageByID)
 	err := http.ListenAndServe(config.Values.ServerAddress, router)
+
+	sugar.Infoln("server started")
 
 	if err != nil {
 		panic(err)

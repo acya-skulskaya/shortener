@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"go.uber.org/zap"
 	"os"
 )
 
@@ -11,6 +12,7 @@ type Config struct {
 }
 
 var Values Config
+var sugar zap.SugaredLogger
 
 func Init() {
 	cfg := Config{}
@@ -28,4 +30,9 @@ func Init() {
 	}
 
 	Values = cfg
+
+	sugar.Infoln("config initialized",
+		"ServerAddress", cfg.ServerAddress,
+		"cfg.URLAddress", cfg.URLAddress,
+	)
 }
