@@ -1,12 +1,11 @@
 package middleware
 
 import (
+	"github.com/acya-skulskaya/shortener/internal/logger"
 	"go.uber.org/zap"
 	"net/http"
 	"time"
 )
-
-var sugar zap.SugaredLogger
 
 // RequestLogger HTTP middleware setting a value on the request context
 func RequestLogger(next http.Handler) http.Handler {
@@ -29,17 +28,19 @@ func RequestLogger(next http.Handler) http.Handler {
 
 		next.ServeHTTP(&lw, r)
 
-		duration := time.Since(start)
+		duration := time.Since(start).String()
 
 		// отправляем сведения о запросе в zap
-		sugar.Infoln("REQUEST",
-			"uri", uri,
-			"method", method,
-			"duration", duration,
+
+		logger.Log.Info("REQUEST",
+			zap.String("uri", uri),
+			zap.String("method", method),
+			zap.String("duration", duration),
 		)
-		sugar.Infoln("RESPONSE",
-			"status", responseData.status, // получаем перехваченный код статуса ответа
-			"size", responseData.size, // получаем перехваченный размер ответа
+
+		logger.Log.Info("REQUEST",
+			zap.Int("status", responseData.status), // получаем перехваченный код статуса ответа
+			zap.Int("size", responseData.size),     // получаем перехваченный размер ответа
 		)
 	})
 }

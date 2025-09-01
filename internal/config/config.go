@@ -2,22 +2,22 @@ package config
 
 import (
 	"flag"
-	"go.uber.org/zap"
 	"os"
 )
 
 type Config struct {
 	ServerAddress string
 	URLAddress    string
+	LogLevel      string
 }
 
 var Values Config
-var sugar zap.SugaredLogger
 
 func Init() {
 	cfg := Config{}
 	flag.StringVar(&cfg.ServerAddress, "a", ":8080", "address of HTTP server to start")
 	flag.StringVar(&cfg.URLAddress, "b", "http://localhost:8080", "server address in shortened URLs")
+	flag.StringVar(&cfg.LogLevel, "l", "info", "log level")
 
 	flag.Parse()
 
@@ -29,10 +29,9 @@ func Init() {
 		cfg.URLAddress = baseURL
 	}
 
-	Values = cfg
+	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
+		cfg.LogLevel = logLevel
+	}
 
-	sugar.Infoln("config initialized",
-		"ServerAddress", cfg.ServerAddress,
-		"cfg.URLAddress", cfg.URLAddress,
-	)
+	Values = cfg
 }
