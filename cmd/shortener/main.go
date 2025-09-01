@@ -20,7 +20,7 @@ func (c *Container) add(id string, value string) {
 	defer c.mu.Unlock()
 	c.shortUrls[id] = value
 }
-func (c *Container) getUrl(id string) string {
+func (c *Container) getURL(id string) string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.shortUrls[id]
