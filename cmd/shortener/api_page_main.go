@@ -3,11 +3,10 @@ package main
 import "C"
 import (
 	"github.com/acya-skulskaya/shortener/internal/config"
+	"github.com/acya-skulskaya/shortener/internal/helpers"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"go.uber.org/zap"
 	"io"
-	"math"
-	"math/rand"
 	"net/http"
 )
 
@@ -42,7 +41,8 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// TODO save url and id in db
-	id := RandStringRunes(10)
+	// TODO make repository
+	id := helpers.RandStringRunes(10)
 	url := string(body)
 	Cont.add(id, url)
 	//ShortUrls[id] = string(body)
@@ -55,18 +55,4 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
 	res.Write([]byte(config.Values.URLAddress + "/" + id))
-}
-
-func RandStringRunes(n int) string {
-	letterRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-	if n < 0 {
-		n = int(math.Abs(float64(n)))
-	}
-
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	return string(b)
 }
