@@ -36,7 +36,8 @@ func RequestCompressor(next http.Handler) http.Handler {
 
 		// проверяем, что клиент отправил серверу сжатые данные в формате gzip
 		contentEncoding := r.Header.Get("Content-Encoding")
-		sendsGzip := contentEncoding == "application/json" || contentEncoding == "text/html"
+		sendsGzip := strings.Contains(contentEncoding, "gzip")
+
 		if sendsGzip {
 			// оборачиваем тело запроса в io.Reader с поддержкой декомпрессии
 			cr, err := helpers.NewCompressReader(r.Body)
