@@ -1,33 +1,14 @@
 package main
 
-import "C"
 import (
 	"github.com/acya-skulskaya/shortener/internal/config"
-	"github.com/acya-skulskaya/shortener/internal/helpers"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
 )
 
-/*
-Эндпоинт с методом POST и путём /. Сервер принимает в теле запроса строку URL как text/plain и возвращает ответ с кодом 201 и сокращённым URL как text/plain.
-
-Пример запроса к серверу:
-POST / HTTP/1.1
-Host: localhost:8080
-Content-Type: text/plain
-
-https://practicum.yandex.ru/
-
-Пример ответа от сервера:
-HTTP/1.1 201 Created
-Content-Type: text/plain
-Content-Length: 30
-
-http://localhost:8080/EwHXdJfB
-*/
-func apiPageMain(res http.ResponseWriter, req *http.Request) {
+func (su *ShortUrlsService) apiPageMain(res http.ResponseWriter, req *http.Request) {
 	// На любой некорректный запрос сервер должен возвращать ответ с кодом 400.
 	if req.Method != http.MethodPost {
 		http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -40,12 +21,8 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// TODO save url and id in db
-	// TODO make repository
-	id := helpers.RandStringRunes(10)
 	url := string(body)
-	Cont.add(id, url)
-	//ShortUrls[id] = string(body)
+	id := su.repo.Store(url)
 
 	logger.Log.Info("short url was created",
 		zap.String("id", id),

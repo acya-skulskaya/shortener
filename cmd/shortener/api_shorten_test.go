@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -34,13 +35,15 @@ func Test_apiShorten(t *testing.T) {
 		},
 	}
 
+	shortURLService := NewShortUrlsService(&short_url_json_file.JSONFileShortURLRepository{})
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			bodyReader := strings.NewReader(test.body)
 			request := httptest.NewRequest(test.method, "/", bodyReader)
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
-			apiShorten(w, request)
+			shortURLService.apiShorten(w, request)
 
 			res := w.Result()
 			// проверяем код ответа

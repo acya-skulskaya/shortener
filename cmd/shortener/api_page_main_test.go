@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -60,6 +61,8 @@ func Test_apiPageMain(t *testing.T) {
 		},
 	}
 
+	shortURLService := NewShortUrlsService(&short_url_json_file.JSONFileShortURLRepository{})
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			link := "https://practicum.yandex.ru/learn/go-advanced/courses/7154aca2-2665-440e-99ef-9dec1dfa1cd1/sprints/634244/topics/75da540c-e78d-4fdb-be66-c94ca0f88f58/lessons/6f432b47-f47c-4544-a686-7e2a94105cd6/"
@@ -67,7 +70,7 @@ func Test_apiPageMain(t *testing.T) {
 			request := httptest.NewRequest(test.method, "/", bodyReader)
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
-			apiPageMain(w, request)
+			shortURLService.apiPageMain(w, request)
 
 			res := w.Result()
 			// проверяем код ответа
