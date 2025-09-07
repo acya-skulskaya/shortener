@@ -1,7 +1,7 @@
 package main
 
 import (
-	shortUrlJsonFile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
+	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -61,7 +61,7 @@ func Test_apiPageMain(t *testing.T) {
 		},
 	}
 
-	shortURLService := NewShortUrlsService(&shortUrlJsonFile.JSONFileShortURLRepository{})
+	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{})
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -85,7 +85,6 @@ func Test_apiPageMain(t *testing.T) {
 			if test.want.response == "url" {
 				_, err := url.ParseRequestURI(string(resBody))
 				assert.NoError(t, err)
-				// TODO check id in db
 			} else {
 				assert.Equal(t, test.want.response, string(resBody))
 			}

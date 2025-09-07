@@ -1,4 +1,4 @@
-package shortUrlJsonFile
+package shorturljsonfile
 
 import (
 	"github.com/acya-skulskaya/shortener/internal/config"

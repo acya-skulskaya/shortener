@@ -34,7 +34,7 @@ func Test_apiShorten(t *testing.T) {
 		},
 	}
 
-	shortURLService := NewShortUrlsService(&shortUrlJsonFile.JSONFileShortURLRepository{})
+	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{})
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
