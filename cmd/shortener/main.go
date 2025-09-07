@@ -5,7 +5,7 @@ import (
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"github.com/acya-skulskaya/shortener/internal/middleware"
 	interfaces "github.com/acya-skulskaya/shortener/internal/repository/interface"
-	"github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
+	shortUrlJsonFile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"net/http"
@@ -52,7 +52,7 @@ func main() {
 	router.Use(middleware.RequestLogger)
 	router.Use(middleware.RequestCompressor)
 
-	shortURLService := NewShortUrlsService(&short_url_json_file.JSONFileShortURLRepository{})
+	shortURLService := NewShortUrlsService(&shortUrlJsonFile.JSONFileShortURLRepository{})
 
 	router.Post("/", shortURLService.apiPageMain)
 	router.Get("/{id}", shortURLService.apiPageByID)

@@ -1,4 +1,4 @@
-package short_url_json_file
+package shortUrlJsonFile
 
 import (
 	"github.com/acya-skulskaya/shortener/internal/config"
@@ -26,7 +26,7 @@ func (repo *JSONFileShortURLRepository) Get(id string) (originalURL string) {
 
 	for _, l := range list {
 		if l.ID == id {
-			return l.OriginalUrl
+			return l.OriginalURL
 		}
 	}
 
@@ -39,8 +39,8 @@ func (repo *JSONFileShortURLRepository) Store(originalURL string) (id string) {
 
 	row := model.URLList{
 		ID:          id,
-		ShortUrl:    config.Values.URLAddress + "/" + id,
-		OriginalUrl: originalURL,
+		ShortURL:    config.Values.URLAddress + "/" + id,
+		OriginalURL: originalURL,
 	}
 
 	writer, _ := NewFileWriter(config.Values.FileStoragePath)

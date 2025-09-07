@@ -1,4 +1,4 @@
-package short_url_json_file
+package shortUrlJsonFile
 
 import (
 	"bufio"
@@ -29,10 +29,10 @@ func NewFileWriter(filename string) (*FileWriter, error) {
 
 func (p *FileWriter) WriteFile(row model.URLList) error {
 	fileReader, err := NewFileReader(p.file.Name())
-	defer fileReader.Close()
 	if err != nil {
 		return err
 	}
+	defer fileReader.Close()
 
 	list, err := fileReader.ReadFile()
 	if err != nil {
@@ -42,7 +42,7 @@ func (p *FileWriter) WriteFile(row model.URLList) error {
 
 	list = append(list, row)
 
-	data, err := json.Marshal(list)
+	data, _ := json.Marshal(list)
 
 	// записываем событие в буфер
 	if _, err := p.writer.Write(data); err != nil {

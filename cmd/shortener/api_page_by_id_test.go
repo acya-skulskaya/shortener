@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
+	shortUrlJsonFile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -57,7 +57,7 @@ func Test_apiPageByID(t *testing.T) {
 		},
 	}
 
-	shortURLService := NewShortUrlsService(&short_url_json_file.JSONFileShortURLRepository{})
+	shortURLService := NewShortUrlsService(&shortUrlJsonFile.JSONFileShortURLRepository{})
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

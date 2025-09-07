@@ -1,4 +1,4 @@
-package short_url_json_file
+package shortUrlJsonFile
 
 import (
 	"bufio"
