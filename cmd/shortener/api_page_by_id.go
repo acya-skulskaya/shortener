@@ -15,6 +15,10 @@ func (su *ShortUrlsService) apiPageByID(res http.ResponseWriter, req *http.Reque
 	}
 
 	id := chi.URLParam(req, "id")
+	// TODO почему при запуске тестов епрестал чиатться параметр с помощью chi???
+	if len(id) == 0 {
+		id = req.PathValue("id")
+	}
 
 	url := su.repo.Get(id)
 

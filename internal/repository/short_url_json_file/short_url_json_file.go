@@ -12,8 +12,17 @@ type JSONFileShortURLRepository struct {
 }
 
 func (repo *JSONFileShortURLRepository) Get(id string) (originalURL string) {
-	reader, _ := NewFileReader(config.Values.FileStoragePath)
+	reader, err := NewFileReader(config.Values.FileStoragePath)
+	if err != nil {
+		logger.Log.Debug("could not create reader",
+			zap.Error(err),
+			zap.String("id", id),
+			zap.String("file", config.Values.FileStoragePath),
+		)
+		return ""
+	}
 	defer reader.Close()
+
 	list, err := reader.ReadFile()
 	if err != nil {
 		logger.Log.Debug("could not read file",
@@ -43,8 +52,17 @@ func (repo *JSONFileShortURLRepository) Store(originalURL string) (id string) {
 		OriginalURL: originalURL,
 	}
 
-	writer, _ := NewFileWriter(config.Values.FileStoragePath)
-	err := writer.WriteFile(row)
+	writer, err := NewFileWriter(config.Values.FileStoragePath)
+	if err != nil {
+		logger.Log.Debug("could not create file writer",
+			zap.Error(err),
+			zap.String("id", id),
+			zap.String("url", originalURL),
+			zap.String("file", config.Values.FileStoragePath),
+		)
+		return ""
+	}
+	err = writer.WriteFile(row)
 	if err != nil {
 		logger.Log.Debug("could not write short url to file",
 			zap.Error(err),

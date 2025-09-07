@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/acya-skulskaya/shortener/internal/config"
 	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -9,6 +10,8 @@ import (
 )
 
 func Test_apiPageByID(t *testing.T) {
+	config.Init()
+
 	type want struct {
 		code        int
 		response    string
@@ -58,10 +61,13 @@ func Test_apiPageByID(t *testing.T) {
 	}
 
 	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{})
+	repo := &shorturljsonfile.JSONFileShortURLRepository{}
+	id := repo.Store("https://test.com")
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			request := httptest.NewRequest(test.method, "/ZYzivdwTSw", nil)
+			request := httptest.NewRequest(test.method, "/"+id, nil)
+			request.SetPathValue("id", id)
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			shortURLService.apiPageByID(w, request)
