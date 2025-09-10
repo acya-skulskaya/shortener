@@ -3,6 +3,7 @@ package shorturljsonfile
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"github.com/acya-skulskaya/shortener/internal/model"
 	"os"
 )
@@ -16,7 +17,7 @@ type FileReader struct {
 func NewFileReader(filename string) (*FileReader, error) {
 	file, err := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error opening file %s: %w", filename, err)
 	}
 
 	return &FileReader{
@@ -37,7 +38,7 @@ func (c *FileReader) ReadFile() ([]model.URLList, error) {
 	var list []model.URLList
 	err := json.Unmarshal(data, &list)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not read json: %w", err)
 	}
 
 	return list, nil

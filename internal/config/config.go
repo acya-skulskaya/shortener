@@ -23,19 +23,23 @@ func Init() {
 
 	flag.Parse()
 
-	if serverAddress := os.Getenv("SERVER_ADDRESS"); serverAddress != "" {
+	serverAddress, ok := os.LookupEnv("SERVER_ADDRESS")
+	if ok {
 		cfg.ServerAddress = serverAddress
 	}
 
-	if baseURL := os.Getenv("BASE_URL"); baseURL != "" {
+	baseURL, ok := os.LookupEnv("BASE_URL")
+	if ok {
 		cfg.URLAddress = baseURL
 	}
 
-	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
+	logLevel, ok := os.LookupEnv("LOG_LEVEL")
+	if ok {
 		cfg.LogLevel = logLevel
 	}
 
-	if fileStoragePath := os.Getenv("FILE_STORAGE_PATH"); fileStoragePath != "" {
+	fileStoragePath, ok := os.LookupEnv("FILE_STORAGE_PATH")
+	if ok {
 		cfg.FileStoragePath = fileStoragePath
 	}
 

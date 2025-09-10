@@ -21,25 +21,6 @@ func NewShortUrlsService(su interfaces.ShortURLRepository) *ShortUrlsService {
 	}
 }
 
-//type Container struct {
-//	mu        sync.Mutex
-//	shortUrls map[string]string
-//}
-//
-//func (c *Container) add(id string, value string) {
-//	c.mu.Lock()
-//	defer c.mu.Unlock()
-//	c.shortUrls[id] = value
-//}
-//func (c *Container) getURL(id string) string {
-//	c.mu.Lock()
-//	defer c.mu.Unlock()
-//	return c.shortUrls[id]
-//}
-
-// var ShortUrls = make(map[string]string)
-//var Cont = Container{shortUrls: make(map[string]string)}
-
 func main() {
 	config.Init()
 

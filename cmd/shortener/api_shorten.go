@@ -28,7 +28,9 @@ func (su *ShortUrlsService) apiShorten(res http.ResponseWriter, req *http.Reques
 
 	err = json.Unmarshal(body, &requestData)
 	if err != nil {
-		logger.Log.Debug("could not parse request body", zap.Error(err))
+		logger.Log.Debug("could not parse request body",
+			zap.Error(err),
+		)
 		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

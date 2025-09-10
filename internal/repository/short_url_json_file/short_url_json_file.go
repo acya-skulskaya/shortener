@@ -42,7 +42,6 @@ func (repo *JSONFileShortURLRepository) Get(id string) (originalURL string) {
 	return ""
 }
 
-// func (repo *InJSONFileShortURLRepository) Store(originalURL string) (id string, err error) {
 func (repo *JSONFileShortURLRepository) Store(originalURL string) (id string) {
 	id = helpers.RandStringRunes(10)
 

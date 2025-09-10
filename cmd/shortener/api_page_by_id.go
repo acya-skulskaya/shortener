@@ -27,11 +27,6 @@ func (su *ShortUrlsService) apiPageByID(res http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	//url := ShortUrls[id]
-	//res.WriteHeader(http.StatusTemporaryRedirect)
-	//res.Header().Set("Location", url)
-	//	res.Header().Add("Location", url)
-
 	logger.Log.Info("got page",
 		zap.String("id", id),
 		zap.String("url", url),

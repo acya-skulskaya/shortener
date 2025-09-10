@@ -17,7 +17,7 @@ type FileWriter struct {
 func NewFileWriter(filename string) (*FileWriter, error) {
 	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error opening file %s: %w", filename, err)
 	}
 
 	return &FileWriter{
@@ -36,13 +36,15 @@ func (p *FileWriter) WriteFile(row model.URLList) error {
 
 	list, err := fileReader.ReadFile()
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
 	list = append(list, row)
 
-	data, _ := json.Marshal(list)
+	data, err := json.Marshal(list)
+	if err != nil {
+		return fmt.Errorf("could not encode json: %w", err)
+	}
 
 	// записываем событие в буфер
 	if _, err := p.writer.Write(data); err != nil {

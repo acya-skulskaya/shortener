@@ -79,14 +79,6 @@ func Test_apiPageByID(t *testing.T) {
 			assert.Equal(t, test.want.code, res.StatusCode)
 			// проверяем Content-Type
 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
-			// TODO проверяем Location по id
-			//assert.Equal(t, test.want.headerLocation, res.Header.Get("Location"))
-			// получаем и проверяем тело запроса
-
-			//resBody, err := io.ReadAll(res.Body)
-			//
-			//require.NoError(t, err)
-			//assert.Equal(t, test.want.response, string(resBody))
 		})
 	}
 }
