@@ -44,6 +44,7 @@ func main() {
 
 	router.Post("/", apiPageMain)
 	router.Get("/{id}", apiPageByID)
+	router.Post("/api/shorten", apiShorten)
 	err := http.ListenAndServe(config.Values.ServerAddress, router)
 
 	logger.Log.Info("server started",
