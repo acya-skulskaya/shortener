@@ -3,6 +3,8 @@ package main
 import "C"
 import (
 	"github.com/acya-skulskaya/shortener/internal/config"
+	"github.com/acya-skulskaya/shortener/internal/logger"
+	"go.uber.org/zap"
 	"io"
 	"math"
 	"math/rand"
@@ -41,8 +43,14 @@ func apiPageMain(res http.ResponseWriter, req *http.Request) {
 
 	// TODO save url and id in db
 	id := RandStringRunes(10)
-	Cont.add(id, string(body))
+	url := string(body)
+	Cont.add(id, url)
 	//ShortUrls[id] = string(body)
+
+	logger.Log.Info("short url was created",
+		zap.String("id", id),
+		zap.String("url", url),
+	)
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
