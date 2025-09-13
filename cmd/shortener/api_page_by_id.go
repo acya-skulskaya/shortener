@@ -7,19 +7,7 @@ import (
 	"net/http"
 )
 
-/*
-Эндпоинт с методом GET и путём /{id}, где id — идентификатор сокращённого URL (например, /EwHXdJfB). В случае успешной обработки запроса сервер возвращает ответ с кодом 307 и оригинальным URL в HTTP-заголовке Location.
-
-Пример запроса к серверу:
-GET /EwHXdJfB HTTP/1.1
-Host: localhost:8080
-Content-Type: text/plain
-
-Пример ответа от сервера:
-HTTP/1.1 307 Temporary Redirect
-Location: https://practicum.yandex.ru/
-*/
-func apiPageByID(res http.ResponseWriter, req *http.Request) {
+func (su *ShortUrlsService) apiPageByID(res http.ResponseWriter, req *http.Request) {
 	// На любой некорректный запрос сервер должен возвращать ответ с кодом 400.
 	if req.Method != http.MethodGet {
 		http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -27,12 +15,17 @@ func apiPageByID(res http.ResponseWriter, req *http.Request) {
 	}
 
 	id := chi.URLParam(req, "id")
-	// TODO get url from db
-	url := Cont.getURL(id)
-	//url := ShortUrls[id]
-	//res.WriteHeader(http.StatusTemporaryRedirect)
-	//res.Header().Set("Location", url)
-	//	res.Header().Add("Location", url)
+	// TODO почему при запуске тестов епрестал чиатться параметр с помощью chi???
+	if len(id) == 0 {
+		id = req.PathValue("id")
+	}
+
+	url := su.repo.Get(id)
+
+	if len(url) == 0 {
+		http.Error(res, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
 
 	logger.Log.Info("got page",
 		zap.String("id", id),

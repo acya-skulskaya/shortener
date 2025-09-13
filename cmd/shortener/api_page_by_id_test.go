@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/acya-skulskaya/shortener/internal/config"
+	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -8,6 +10,8 @@ import (
 )
 
 func Test_apiPageByID(t *testing.T) {
+	config.Init()
+
 	type want struct {
 		code        int
 		response    string
@@ -56,12 +60,17 @@ func Test_apiPageByID(t *testing.T) {
 		},
 	}
 
+	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{})
+	repo := &shorturljsonfile.JSONFileShortURLRepository{}
+	id := repo.Store("https://test.com")
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			request := httptest.NewRequest(test.method, "/ZYzivdwTSw", nil)
+			request := httptest.NewRequest(test.method, "/"+id, nil)
+			request.SetPathValue("id", id)
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
-			apiPageByID(w, request)
+			shortURLService.apiPageByID(w, request)
 
 			res := w.Result()
 			defer res.Body.Close()
@@ -70,14 +79,6 @@ func Test_apiPageByID(t *testing.T) {
 			assert.Equal(t, test.want.code, res.StatusCode)
 			// проверяем Content-Type
 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
-			// TODO проверяем Location по id
-			//assert.Equal(t, test.want.headerLocation, res.Header.Get("Location"))
-			// получаем и проверяем тело запроса
-
-			//resBody, err := io.ReadAll(res.Body)
-			//
-			//require.NoError(t, err)
-			//assert.Equal(t, test.want.response, string(resBody))
 		})
 	}
 }

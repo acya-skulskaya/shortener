@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"github.com/acya-skulskaya/shortener/internal/helpers"
+	"github.com/acya-skulskaya/shortener/internal/logger"
+	"go.uber.org/zap"
 	"net/http"
 	"strings"
 )
@@ -32,6 +34,7 @@ func RequestCompressor(next http.Handler) http.Handler {
 			// оборачиваем тело запроса в io.Reader с поддержкой декомпрессии
 			cr, err := helpers.NewCompressReader(r.Body)
 			if err != nil {
+				logger.Log.Debug("error encoding response", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
