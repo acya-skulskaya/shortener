@@ -38,7 +38,7 @@ func RequestLogger(next http.Handler) http.Handler {
 			zap.String("duration", duration),
 		)
 
-		logger.Log.Info("REQUEST",
+		logger.Log.Info("RESPONSE",
 			zap.Int("status", responseData.status), // получаем перехваченный код статуса ответа
 			zap.Int("size", responseData.size),     // получаем перехваченный размер ответа
 		)

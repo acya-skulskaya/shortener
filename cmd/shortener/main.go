@@ -41,6 +41,7 @@ func main() {
 	router := chi.NewRouter()
 
 	router.Use(middleware.RequestLogger)
+	router.Use(middleware.RequestCompressor)
 
 	router.Post("/", apiPageMain)
 	router.Get("/{id}", apiPageByID)
