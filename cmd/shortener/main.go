@@ -28,16 +28,9 @@ func main() {
 		panic(err)
 	}
 
-	router := chi.NewRouter()
-
-	router.Use(middleware.RequestLogger)
-	router.Use(middleware.RequestCompressor)
-
 	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{})
 
-	router.Post("/", shortURLService.apiPageMain)
-	router.Get("/{id}", shortURLService.apiPageByID)
-	router.Post("/api/shorten", shortURLService.apiShorten)
+	router := NewRouter(shortURLService)
 	err := http.ListenAndServe(config.Values.ServerAddress, router)
 
 	logger.Log.Info("server started",
@@ -45,9 +38,24 @@ func main() {
 		zap.String("URLAddress", config.Values.URLAddress),
 		zap.String("LogLevel", config.Values.LogLevel),
 		zap.String("FileStoragePath", config.Values.FileStoragePath),
+		zap.String("DatabaseDSN", config.Values.DatabaseDSN),
 	)
 
 	if err != nil {
 		panic(err)
 	}
+}
+
+func NewRouter(su *ShortUrlsService) *chi.Mux {
+	router := chi.NewRouter()
+
+	router.Use(middleware.RequestLogger)
+	router.Use(middleware.RequestCompressor)
+
+	router.Post("/", su.apiPageMain)
+	router.Get("/{id}", su.apiPageByID)
+	router.Get("/ping", su.apiPingDB)
+	router.Post("/api/shorten", su.apiShorten)
+
+	return router
 }

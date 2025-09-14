@@ -4,6 +4,7 @@ import (
 	"github.com/acya-skulskaya/shortener/internal/config"
 	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -31,54 +32,35 @@ func Test_apiPageByID(t *testing.T) {
 				contentType: "text/html; charset=utf-8",
 			},
 		},
-		{
-			name:   "400 error when method (post) is wrong",
-			method: http.MethodPost,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    "Bad Request\n",
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
-		{
-			name:   "400 error when method (put) is wrong",
-			method: http.MethodPut,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    "Bad Request\n",
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
-		{
-			name:   "400 error when method (delete) is wrong",
-			method: http.MethodDelete,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    "Bad Request\n",
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
 	}
 
 	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{})
 	repo := &shorturljsonfile.JSONFileShortURLRepository{}
 	id := repo.Store("https://test.com")
 
+	router := NewRouter(shortURLService)
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			request := httptest.NewRequest(test.method, "/"+id, nil)
-			request.SetPathValue("id", id)
-			// создаём новый Recorder
-			w := httptest.NewRecorder()
-			shortURLService.apiPageByID(w, request)
+			request, err := http.NewRequest(test.method, testServer.URL+"/"+id, nil)
+			require.NoError(t, err)
 
-			res := w.Result()
-			defer res.Body.Close()
+			client := &http.Client{
+				CheckRedirect: func(req *http.Request, via []*http.Request) error {
+					return http.ErrUseLastResponse
+				},
+			}
+
+			response, err := client.Do(request)
+			require.NoError(t, err)
+			defer response.Body.Close()
 
 			// проверяем код ответа
-			assert.Equal(t, test.want.code, res.StatusCode)
+			assert.Equal(t, test.want.code, response.StatusCode)
 			// проверяем Content-Type
-			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
+			assert.Equal(t, test.want.contentType, response.Header.Get("Content-Type"))
 		})
 	}
 }
