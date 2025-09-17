@@ -1,4 +1,4 @@
-package short_url_in_memory
+package shorturlinmemory
 
 import (
 	"github.com/acya-skulskaya/shortener/internal/helpers"

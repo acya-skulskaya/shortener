@@ -40,7 +40,7 @@ func main() {
 		shortURLService = NewShortUrlsService(&shorturlindb.InDBShortURLRepository{DB: db})
 		logger.Log.Info("using db storage", zap.String("DatabaseDSN", config.Values.DatabaseDSN))
 	} else if len(config.Values.FileStoragePath) != 0 {
-		shortURLService = NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{})
+		shortURLService = NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: config.Values.FileStoragePath})
 		logger.Log.Info("using file storage", zap.String("FileStoragePath", config.Values.FileStoragePath))
 	} else {
 		logger.Log.Info("using in memory storage")

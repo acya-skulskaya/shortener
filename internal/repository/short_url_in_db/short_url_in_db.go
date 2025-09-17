@@ -1,4 +1,4 @@
-package short_url_in_db
+package shorturlindb
 
 import (
 	"context"
