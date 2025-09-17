@@ -20,8 +20,8 @@ func Init() {
 	flag.StringVar(&cfg.ServerAddress, "a", ":8080", "address of HTTP server to start")
 	flag.StringVar(&cfg.URLAddress, "b", "http://localhost:8080", "server address in shortened URLs")
 	flag.StringVar(&cfg.LogLevel, "l", "debug", "log level")
-	flag.StringVar(&cfg.FileStoragePath, "f", "./urls.json", "path to file with short urls")
-	flag.StringVar(&cfg.DatabaseDSN, "d", "host=localhost port=5432 user=postgres password=postgres dbname=postgres sslmode=disable", "connection settings for pgsql")
+	flag.StringVar(&cfg.FileStoragePath, "f", "", "path to file with short urls")
+	flag.StringVar(&cfg.DatabaseDSN, "d", "", "connection settings for pgsql")
 
 	flag.Parse()
 

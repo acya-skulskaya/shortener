@@ -24,6 +24,11 @@ func (su *ShortUrlsService) apiPageMain(res http.ResponseWriter, req *http.Reque
 	url := string(body)
 	id := su.repo.Store(url)
 
+	if len(id) == 0 {
+		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	logger.Log.Info("short url was created",
 		zap.String("id", id),
 		zap.String("url", url),
