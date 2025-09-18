@@ -5,6 +5,8 @@ import (
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"github.com/acya-skulskaya/shortener/internal/middleware"
 	interfaces "github.com/acya-skulskaya/shortener/internal/repository/interface"
+	shorturlindb "github.com/acya-skulskaya/shortener/internal/repository/short_url_in_db"
+	shorturlinmemory "github.com/acya-skulskaya/shortener/internal/repository/short_url_in_memory"
 	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -28,7 +30,21 @@ func main() {
 		panic(err)
 	}
 
-	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{})
+	shortURLService := NewShortUrlsService(&shorturlinmemory.InMemoryShortURLRepository{})
+	if len(config.Values.DatabaseDSN) != 0 {
+		db, err := shorturlindb.NewInDBShortURLRepository(config.Values.DatabaseDSN)
+		if err != nil {
+			panic(err)
+		}
+		defer db.Close()
+		shortURLService = NewShortUrlsService(&shorturlindb.InDBShortURLRepository{DB: db})
+		logger.Log.Info("using db storage", zap.String("DatabaseDSN", config.Values.DatabaseDSN))
+	} else if len(config.Values.FileStoragePath) != 0 {
+		shortURLService = NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: config.Values.FileStoragePath})
+		logger.Log.Info("using file storage", zap.String("FileStoragePath", config.Values.FileStoragePath))
+	} else {
+		logger.Log.Info("using in memory storage")
+	}
 
 	router := NewRouter(shortURLService)
 	err := http.ListenAndServe(config.Values.ServerAddress, router)
@@ -37,8 +53,6 @@ func main() {
 		zap.String("ServerAddress", config.Values.ServerAddress),
 		zap.String("URLAddress", config.Values.URLAddress),
 		zap.String("LogLevel", config.Values.LogLevel),
-		zap.String("FileStoragePath", config.Values.FileStoragePath),
-		zap.String("DatabaseDSN", config.Values.DatabaseDSN),
 	)
 
 	if err != nil {
