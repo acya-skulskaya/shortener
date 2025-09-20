@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"github.com/acya-skulskaya/shortener/internal/helpers"
 	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -11,7 +13,7 @@ import (
 	"testing"
 )
 
-func Test_apiShorten(t *testing.T) {
+func Test_apiShortenBatch(t *testing.T) {
 	tests := []struct {
 		name                string
 		method              string
@@ -20,18 +22,20 @@ func Test_apiShorten(t *testing.T) {
 		expectedContentType string
 	}{
 		{
-			name:                "short url created",
-			method:              http.MethodPost,
-			body:                `{"url": "http://test.test"}`,
+			name:   "short urls stored",
+			method: http.MethodPost,
+			body: fmt.Sprintf(`[
+    {
+        "correlation_id": "%s",
+        "original_url": "http://test.com"
+    },
+    {
+        "correlation_id": "%s",
+        "original_url": "http://test2.com"
+    }
+]`, helpers.RandStringRunes(10), helpers.RandStringRunes(10)),
 			expectedCode:        http.StatusCreated,
 			expectedContentType: "application/json",
-		},
-		{
-			name:                "500 error on invalid json",
-			method:              http.MethodPost,
-			body:                `{"url": "http://test.test}`,
-			expectedCode:        http.StatusInternalServerError,
-			expectedContentType: "text/plain; charset=utf-8",
 		},
 	}
 
@@ -43,7 +47,7 @@ func Test_apiShorten(t *testing.T) {
 			request := httptest.NewRequest(test.method, "/", bodyReader)
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
-			shortURLService.apiShorten(w, request)
+			shortURLService.apiShortenBatch(w, request)
 
 			res := w.Result()
 			// проверяем код ответа

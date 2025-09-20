@@ -4,7 +4,8 @@ import (
 	"github.com/acya-skulskaya/shortener/internal/config"
 	"github.com/acya-skulskaya/shortener/internal/helpers"
 	"github.com/acya-skulskaya/shortener/internal/logger"
-	"github.com/acya-skulskaya/shortener/internal/model"
+	"github.com/acya-skulskaya/shortener/internal/model/json"
+	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
 	"go.uber.org/zap"
 )
 
@@ -24,7 +25,7 @@ func (repo *JSONFileShortURLRepository) Get(id string) (originalURL string) {
 	}
 	defer reader.Close()
 
-	list, err := reader.ReadFile()
+	list, _, err := reader.ReadFile()
 	if err != nil {
 		logger.Log.Debug("could not read file",
 			zap.Error(err),
@@ -46,7 +47,7 @@ func (repo *JSONFileShortURLRepository) Get(id string) (originalURL string) {
 func (repo *JSONFileShortURLRepository) Store(originalURL string) (id string) {
 	id = helpers.RandStringRunes(10)
 
-	row := model.URLList{
+	row := json.URLList{
 		ID:          id,
 		ShortURL:    config.Values.URLAddress + "/" + id,
 		OriginalURL: originalURL,
@@ -74,4 +75,41 @@ func (repo *JSONFileShortURLRepository) Store(originalURL string) (id string) {
 	}
 
 	return id
+}
+
+func (repo *JSONFileShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList) {
+	writer, err := NewFileWriter(repo.FileStoragePath)
+	if err != nil {
+		logger.Log.Debug("could not create file writer",
+			zap.Error(err),
+		)
+		return nil
+	}
+
+	var rows []jsonModel.URLList
+
+	for _, item := range listOriginal {
+		// TODO check if id already exists
+		rows = append(rows, jsonModel.URLList{
+			ID:          item.CorrelationId,
+			OriginalURL: item.OriginalURL,
+			ShortURL:    config.Values.URLAddress + "/" + item.CorrelationId,
+		})
+
+		listShorten = append(listShorten, jsonModel.BatchURLList{
+			CorrelationId: item.CorrelationId,
+			ShortURL:      config.Values.URLAddress + "/" + item.CorrelationId,
+		})
+	}
+
+	err = writer.WriteFileRows(rows)
+	if err != nil {
+		logger.Log.Debug("could not write short urls to file",
+			zap.Error(err),
+			zap.Any("rows", rows),
+		)
+		return nil
+	}
+
+	return listShorten
 }
