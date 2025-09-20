@@ -6,6 +6,7 @@ import (
 	"github.com/acya-skulskaya/shortener/internal/config"
 	"github.com/acya-skulskaya/shortener/internal/helpers"
 	"github.com/acya-skulskaya/shortener/internal/logger"
+	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -98,4 +99,49 @@ func (repo *InDBShortURLRepository) Store(originalURL string) (id string) {
 	}
 
 	return id
+}
+
+func (repo *InDBShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList) {
+	tx, err := repo.DB.Begin()
+	if err != nil {
+		logger.Log.Debug("could not start transaction",
+			zap.Error(err),
+		)
+		return nil
+	}
+
+	ctx := context.Background()
+
+	stmt, err := tx.PrepareContext(ctx,
+		"INSERT INTO short_urls (id, short_url, original_url) VALUES ($1, $2, $3)")
+	if err != nil {
+		logger.Log.Debug("could not prepare statement",
+			zap.Error(err),
+		)
+		return nil
+	}
+	defer stmt.Close()
+
+	for _, item := range listOriginal {
+		_, err := stmt.ExecContext(ctx, item.CorrelationID, item.ShortURL, item.OriginalURL)
+		if err != nil {
+			// если ошибка, то откатываем изменения
+			tx.Rollback()
+			logger.Log.Debug("could not insert row",
+				zap.Error(err),
+				zap.Any("item", item),
+			)
+			return nil
+		}
+
+		listShorten = append(listShorten, jsonModel.BatchURLList{
+			CorrelationID: item.CorrelationID,
+			ShortURL:      config.Values.URLAddress + "/" + item.CorrelationID,
+		})
+	}
+
+	// завершаем транзакцию
+	tx.Commit()
+
+	return listShorten
 }

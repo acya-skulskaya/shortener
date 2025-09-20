@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/acya-skulskaya/shortener/internal/model"
+	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
 	"os"
 )
 
@@ -27,21 +27,23 @@ func NewFileReader(filename string) (*FileReader, error) {
 	}, nil
 }
 
-func (c *FileReader) ReadFile() ([]model.URLList, error) {
+func (c *FileReader) ReadFile() (list []jsonModel.URLList, ids []string, error error) {
 	// одиночное сканирование до следующей строки
 	if !c.scanner.Scan() {
-		return nil, c.scanner.Err()
+		return nil, nil, c.scanner.Err()
 	}
 	// читаем данные из scanner
 	data := c.scanner.Bytes()
 
-	var list []model.URLList
 	err := json.Unmarshal(data, &list)
 	if err != nil {
-		return nil, fmt.Errorf("could not read json: %w", err)
+		return nil, nil, fmt.Errorf("could not read json: %w", err)
+	}
+	for _, item := range list {
+		ids = append(ids, item.ID)
 	}
 
-	return list, nil
+	return list, ids, nil
 }
 
 func (c *FileReader) Close() error {
