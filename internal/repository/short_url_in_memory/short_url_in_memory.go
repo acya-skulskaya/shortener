@@ -1,7 +1,6 @@
 package shorturlinmemory
 
 import (
-	"errors"
 	"fmt"
 	"github.com/acya-skulskaya/shortener/internal/config"
 	"github.com/acya-skulskaya/shortener/internal/helpers"
@@ -23,7 +22,7 @@ func (c *Container) add(id string, value string) (err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if _, ok := c.shortUrls[id]; ok {
-		return errors.New(fmt.Sprintf("short url with id %s already exists", id))
+		return fmt.Errorf("short url with id %s already exists", id)
 	}
 	c.shortUrls[id] = value
 
@@ -55,7 +54,7 @@ func (repo *InMemoryShortURLRepository) Store(originalURL string) (id string) {
 
 func (repo *InMemoryShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList) {
 	for _, item := range listOriginal {
-		err := cont.add(item.CorrelationId, item.OriginalURL)
+		err := cont.add(item.CorrelationID, item.OriginalURL)
 		if err != nil {
 			logger.Log.Debug("could not add item",
 				zap.Error(err),
@@ -65,8 +64,8 @@ func (repo *InMemoryShortURLRepository) StoreBatch(listOriginal []jsonModel.Batc
 		}
 
 		listShorten = append(listShorten, jsonModel.BatchURLList{
-			CorrelationId: item.CorrelationId,
-			ShortURL:      config.Values.URLAddress + "/" + item.CorrelationId,
+			CorrelationID: item.CorrelationID,
+			ShortURL:      config.Values.URLAddress + "/" + item.CorrelationID,
 		})
 	}
 

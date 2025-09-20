@@ -123,7 +123,7 @@ func (repo *InDBShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURL
 	defer stmt.Close()
 
 	for _, item := range listOriginal {
-		_, err := stmt.ExecContext(ctx, item.CorrelationId, item.ShortURL, item.OriginalURL)
+		_, err := stmt.ExecContext(ctx, item.CorrelationID, item.ShortURL, item.OriginalURL)
 		if err != nil {
 			// если ошибка, то откатываем изменения
 			tx.Rollback()
@@ -135,8 +135,8 @@ func (repo *InDBShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURL
 		}
 
 		listShorten = append(listShorten, jsonModel.BatchURLList{
-			CorrelationId: item.CorrelationId,
-			ShortURL:      config.Values.URLAddress + "/" + item.CorrelationId,
+			CorrelationID: item.CorrelationID,
+			ShortURL:      config.Values.URLAddress + "/" + item.CorrelationID,
 		})
 	}
 

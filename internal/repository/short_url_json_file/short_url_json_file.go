@@ -4,7 +4,6 @@ import (
 	"github.com/acya-skulskaya/shortener/internal/config"
 	"github.com/acya-skulskaya/shortener/internal/helpers"
 	"github.com/acya-skulskaya/shortener/internal/logger"
-	"github.com/acya-skulskaya/shortener/internal/model/json"
 	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
 	"go.uber.org/zap"
 )
@@ -47,7 +46,7 @@ func (repo *JSONFileShortURLRepository) Get(id string) (originalURL string) {
 func (repo *JSONFileShortURLRepository) Store(originalURL string) (id string) {
 	id = helpers.RandStringRunes(10)
 
-	row := json.URLList{
+	row := jsonModel.URLList{
 		ID:          id,
 		ShortURL:    config.Values.URLAddress + "/" + id,
 		OriginalURL: originalURL,
@@ -91,14 +90,14 @@ func (repo *JSONFileShortURLRepository) StoreBatch(listOriginal []jsonModel.Batc
 	for _, item := range listOriginal {
 		// TODO check if id already exists
 		rows = append(rows, jsonModel.URLList{
-			ID:          item.CorrelationId,
+			ID:          item.CorrelationID,
 			OriginalURL: item.OriginalURL,
-			ShortURL:    config.Values.URLAddress + "/" + item.CorrelationId,
+			ShortURL:    config.Values.URLAddress + "/" + item.CorrelationID,
 		})
 
 		listShorten = append(listShorten, jsonModel.BatchURLList{
-			CorrelationId: item.CorrelationId,
-			ShortURL:      config.Values.URLAddress + "/" + item.CorrelationId,
+			CorrelationID: item.CorrelationID,
+			ShortURL:      config.Values.URLAddress + "/" + item.CorrelationID,
 		})
 	}
 
