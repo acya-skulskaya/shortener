@@ -43,7 +43,7 @@ func (repo *JSONFileShortURLRepository) Get(id string) (originalURL string) {
 	return ""
 }
 
-func (repo *JSONFileShortURLRepository) Store(originalURL string) (id string) {
+func (repo *JSONFileShortURLRepository) Store(originalURL string) (id string, err error) {
 	id = helpers.RandStringRunes(10)
 
 	row := jsonModel.URLList{
@@ -60,7 +60,7 @@ func (repo *JSONFileShortURLRepository) Store(originalURL string) (id string) {
 			zap.String("url", originalURL),
 			zap.String("file", repo.FileStoragePath),
 		)
-		return ""
+		return "", err
 	}
 	err = writer.WriteFile(row)
 	if err != nil {
@@ -70,10 +70,10 @@ func (repo *JSONFileShortURLRepository) Store(originalURL string) (id string) {
 			zap.String("url", originalURL),
 			zap.String("file", repo.FileStoragePath),
 		)
-		return ""
+		return "", err
 	}
 
-	return id
+	return id, nil
 }
 
 func (repo *JSONFileShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList) {

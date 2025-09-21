@@ -5,3 +5,4 @@ CREATE TABLE short_urls (
 );
 
 CREATE INDEX idx_id ON short_urls(id);
+CREATE UNIQUE INDEX idx_original_url ON short_urls(original_url);

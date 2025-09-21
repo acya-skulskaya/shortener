@@ -41,15 +41,15 @@ func (repo *InMemoryShortURLRepository) Get(id string) (originalURL string) {
 	return cont.getURL(id)
 }
 
-func (repo *InMemoryShortURLRepository) Store(originalURL string) (id string) {
+func (repo *InMemoryShortURLRepository) Store(originalURL string) (id string, err error) {
 	id = helpers.RandStringRunes(10)
 
-	err := cont.add(id, originalURL)
+	err = cont.add(id, originalURL)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
-	return id
+	return id, nil
 }
 
 func (repo *InMemoryShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList) {

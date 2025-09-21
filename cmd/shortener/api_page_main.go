@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"github.com/acya-skulskaya/shortener/internal/config"
+	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"go.uber.org/zap"
 	"io"
@@ -22,19 +24,24 @@ func (su *ShortUrlsService) apiPageMain(res http.ResponseWriter, req *http.Reque
 	}
 
 	url := string(body)
-	id := su.repo.Store(url)
+	id, err := su.repo.Store(url)
 
 	if len(id) == 0 {
 		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	logger.Log.Info("short url was created",
-		zap.String("id", id),
-		zap.String("url", url),
-	)
-
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	res.WriteHeader(http.StatusCreated)
+
+	if err != nil && errors.Is(err, errorsInternal.ErrConflict) {
+		res.WriteHeader(http.StatusConflict)
+	} else {
+		logger.Log.Info("short url was created",
+			zap.String("id", id),
+			zap.String("url", url),
+		)
+		res.WriteHeader(http.StatusCreated)
+	}
+
 	res.Write([]byte(config.Values.URLAddress + "/" + id))
 }
