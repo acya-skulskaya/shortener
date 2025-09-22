@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
 	"os"
 )
@@ -67,25 +66,8 @@ func (p *FileWriter) WriteFileRows(rows []jsonModel.URLList) error {
 		return err
 	}
 
-	var errs []error
 	for _, row := range rows {
-		err = nil
-		for _, listItem := range list {
-			if listItem.ID == row.ID {
-				err = errorsInternal.ErrConflictID
-				break
-			}
-			if listItem.OriginalURL == row.OriginalURL {
-				err = errorsInternal.ErrConflictOriginalURL
-				break
-			}
-		}
-
-		if err != nil {
-			errs = append(errs, err)
-		} else {
-			list = append(list, row)
-		}
+		list = append(list, row)
 	}
 
 	data, err := json.Marshal(list)

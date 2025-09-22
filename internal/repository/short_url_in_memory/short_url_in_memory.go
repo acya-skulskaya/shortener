@@ -53,7 +53,7 @@ func (repo *InMemoryShortURLRepository) Store(originalURL string) (id string, er
 
 	id, err = cont.add(id, originalURL)
 	if err != nil {
-		if err != nil && errors.Is(err, errorsInternal.ErrConflictOriginalURL) {
+		if errors.Is(err, errorsInternal.ErrConflictOriginalURL) {
 			return id, err
 		} else {
 			return "", err
