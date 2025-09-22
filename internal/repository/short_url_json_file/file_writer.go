@@ -66,9 +66,7 @@ func (p *FileWriter) WriteFileRows(rows []jsonModel.URLList) error {
 		return err
 	}
 
-	for _, row := range rows {
-		list = append(list, row)
-	}
+	list = append(list, rows...)
 
 	data, err := json.Marshal(list)
 	if err != nil {
