@@ -26,15 +26,15 @@ func (su *ShortUrlsService) apiPageMain(res http.ResponseWriter, req *http.Reque
 	url := string(body)
 	id, err := su.repo.Store(url)
 
-	if len(id) == 0 {
-		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
-	if err != nil && errors.Is(err, errorsInternal.ErrConflict) {
-		res.WriteHeader(http.StatusConflict)
+	if err != nil {
+		if errors.Is(err, errorsInternal.ErrConflictOriginalURL) {
+			res.WriteHeader(http.StatusConflict)
+		} else {
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 	} else {
 		logger.Log.Info("short url was created",
 			zap.String("id", id),

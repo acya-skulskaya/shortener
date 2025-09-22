@@ -27,23 +27,20 @@ func NewFileReader(filename string) (*FileReader, error) {
 	}, nil
 }
 
-func (c *FileReader) ReadFile() (list []jsonModel.URLList, ids []string, error error) {
+func (c *FileReader) ReadFile() (list []jsonModel.URLList, error error) {
 	// одиночное сканирование до следующей строки
 	if !c.scanner.Scan() {
-		return nil, nil, c.scanner.Err()
+		return nil, c.scanner.Err()
 	}
 	// читаем данные из scanner
 	data := c.scanner.Bytes()
 
 	err := json.Unmarshal(data, &list)
 	if err != nil {
-		return nil, nil, fmt.Errorf("could not read json: %w", err)
-	}
-	for _, item := range list {
-		ids = append(ids, item.ID)
+		return nil, fmt.Errorf("could not read json: %w", err)
 	}
 
-	return list, ids, nil
+	return list, nil
 }
 
 func (c *FileReader) Close() error {

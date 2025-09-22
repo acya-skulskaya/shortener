@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/acya-skulskaya/shortener/internal/config"
 	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/helpers"
@@ -100,7 +101,7 @@ func (repo *InDBShortURLRepository) Store(originalURL string) (id string, err er
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-			err = errorsInternal.ErrConflict
+			err = errorsInternal.ErrConflictOriginalURL
 
 			row := repo.DB.QueryRowContext(ctx,
 				"SELECT id FROM short_urls where original_url = $1", originalURL)
@@ -124,13 +125,13 @@ func (repo *InDBShortURLRepository) Store(originalURL string) (id string, err er
 	return id, nil
 }
 
-func (repo *InDBShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList) {
+func (repo *InDBShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList, err error) {
 	tx, err := repo.DB.Begin()
 	if err != nil {
 		logger.Log.Debug("could not start transaction",
 			zap.Error(err),
 		)
-		return nil
+		return nil, err
 	}
 
 	ctx := context.Background()
@@ -141,11 +142,18 @@ func (repo *InDBShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURL
 		logger.Log.Debug("could not prepare statement",
 			zap.Error(err),
 		)
-		return nil
+		return nil, err
 	}
 	defer stmt.Close()
 
+	var errs []error
+
 	for _, item := range listOriginal {
+		listShortenItem := jsonModel.BatchURLList{
+			CorrelationID: item.CorrelationID,
+			ShortURL:      config.Values.URLAddress + "/" + item.CorrelationID,
+		}
+
 		_, err := stmt.ExecContext(ctx, item.CorrelationID, item.ShortURL, item.OriginalURL)
 		if err != nil {
 			// если ошибка, то откатываем изменения
@@ -154,17 +162,53 @@ func (repo *InDBShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURL
 				zap.Error(err),
 				zap.Any("item", item),
 			)
-			return nil
+
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+				listShortenItem.Err = fmt.Sprint(err)
+				if pgErr.Code == pgerrcode.UniqueViolation {
+					err = errorsInternal.ErrConflictOriginalURL
+
+					row := repo.DB.QueryRowContext(ctx,
+						"SELECT id FROM short_urls where original_url = $1", item.OriginalURL)
+					var id string
+					errScan := row.Scan(&id) // разбираем результат
+					if errScan != nil {
+						logger.Log.Debug("could not get row from db",
+							zap.Error(errScan),
+						)
+						return nil, errScan
+					}
+					listShortenItem.CorrelationID = id
+					listShortenItem.ShortURL = config.Values.URLAddress + "/" + id
+				} else {
+					err = errorsInternal.ErrConflictID
+
+					row := repo.DB.QueryRowContext(ctx,
+						"SELECT original_url FROM short_urls where id = $1", item.CorrelationID)
+					var originalURL string
+					errScan := row.Scan(&originalURL) // разбираем результат
+					if errScan != nil {
+						logger.Log.Debug("could not get row from db",
+							zap.Error(errScan),
+						)
+						return nil, errScan
+					}
+					listShortenItem.OriginalURL = originalURL
+				}
+
+				errs = append(errs, err)
+			}
+
+			listShorten = []jsonModel.BatchURLList{listShortenItem}
+			return listShorten, errors.Join(errs...)
 		}
 
-		listShorten = append(listShorten, jsonModel.BatchURLList{
-			CorrelationID: item.CorrelationID,
-			ShortURL:      config.Values.URLAddress + "/" + item.CorrelationID,
-		})
+		listShorten = append(listShorten, listShortenItem)
 	}
 
 	// завершаем транзакцию
 	tx.Commit()
 
-	return listShorten
+	return listShorten, errors.Join(errs...)
 }

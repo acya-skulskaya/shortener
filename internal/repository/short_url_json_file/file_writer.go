@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
 	"os"
-	"slices"
 )
 
 type FileWriter struct {
@@ -35,15 +35,10 @@ func (p *FileWriter) WriteFile(row jsonModel.URLList) error {
 	}
 	defer fileReader.Close()
 
-	list, ids, err := fileReader.ReadFile()
+	list, err := fileReader.ReadFile()
 	if err != nil {
 		return err
 	}
-
-	if slices.Contains(ids, row.ID) {
-		return fmt.Errorf("short url with id %s already exists", row.ID)
-	}
-
 	list = append(list, row)
 
 	data, err := json.Marshal(list)
@@ -67,17 +62,30 @@ func (p *FileWriter) WriteFileRows(rows []jsonModel.URLList) error {
 	}
 	defer fileReader.Close()
 
-	list, ids, err := fileReader.ReadFile()
+	list, err := fileReader.ReadFile()
 	if err != nil {
 		return err
 	}
 
-	for _, item := range rows {
-		if slices.Contains(ids, item.ID) {
-			return fmt.Errorf("short url with id %s already exists", item.ID)
+	var errs []error
+	for _, row := range rows {
+		err = nil
+		for _, listItem := range list {
+			if listItem.ID == row.ID {
+				err = errorsInternal.ErrConflictID
+				break
+			}
+			if listItem.OriginalURL == row.OriginalURL {
+				err = errorsInternal.ErrConflictOriginalURL
+				break
+			}
 		}
 
-		list = append(list, item)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			list = append(list, row)
+		}
 	}
 
 	data, err := json.Marshal(list)
