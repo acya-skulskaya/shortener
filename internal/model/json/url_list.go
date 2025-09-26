@@ -1,4 +1,4 @@
-package model
+package json
 
 type URLList struct {
 	ID          string `json:"id"`
