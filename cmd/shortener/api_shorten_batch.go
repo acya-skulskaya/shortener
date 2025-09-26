@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
 	"go.uber.org/zap"
@@ -27,21 +29,18 @@ func (su *ShortUrlsService) apiShortenBatch(res http.ResponseWriter, req *http.R
 		return
 	}
 
-	listShortened := su.repo.StoreBatch(list)
-	if len(listShortened) == 0 {
-		logger.Log.Debug("no urls were inserted",
-			zap.Error(err),
-		)
-		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	logger.Log.Info("short urls were created",
-		zap.Any("list", listShortened),
-	)
-
 	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusCreated)
+
+	listShortened, err := su.repo.StoreBatch(req.Context(), list)
+	if err != nil && (errors.Is(err, errorsInternal.ErrConflictOriginalURL) || errors.Is(err, errorsInternal.ErrConflictID)) {
+		res.WriteHeader(http.StatusConflict)
+	} else {
+		logger.Log.Info("short urls were created",
+			zap.Any("list", listShortened),
+		)
+
+		res.WriteHeader(http.StatusCreated)
+	}
 
 	// сериализуем ответ сервера
 	enc := json.NewEncoder(res)

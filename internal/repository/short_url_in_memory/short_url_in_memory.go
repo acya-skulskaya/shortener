@@ -1,8 +1,11 @@
 package shorturlinmemory
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"github.com/acya-skulskaya/shortener/internal/config"
+	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/helpers"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
@@ -18,15 +21,20 @@ type Container struct {
 	shortUrls map[string]string
 }
 
-func (c *Container) add(id string, value string) (err error) {
+func (c *Container) add(id string, value string) (idAdded string, err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if _, ok := c.shortUrls[id]; ok {
-		return fmt.Errorf("short url with id %s already exists", id)
+		return id, errorsInternal.ErrConflictID
+	}
+	for i, item := range c.shortUrls {
+		if item == value {
+			return i, errorsInternal.ErrConflictOriginalURL
+		}
 	}
 	c.shortUrls[id] = value
 
-	return nil
+	return id, nil
 }
 
 func (c *Container) getURL(id string) string {
@@ -37,37 +45,50 @@ func (c *Container) getURL(id string) string {
 
 var cont = Container{shortUrls: make(map[string]string)}
 
-func (repo *InMemoryShortURLRepository) Get(id string) (originalURL string) {
+func (repo *InMemoryShortURLRepository) Get(ctx context.Context, id string) (originalURL string) {
 	return cont.getURL(id)
 }
 
-func (repo *InMemoryShortURLRepository) Store(originalURL string) (id string) {
+func (repo *InMemoryShortURLRepository) Store(ctx context.Context, originalURL string) (id string, err error) {
 	id = helpers.RandStringRunes(10)
 
-	err := cont.add(id, originalURL)
+	id, err = cont.add(id, originalURL)
 	if err != nil {
-		return ""
+		if errors.Is(err, errorsInternal.ErrConflictOriginalURL) {
+			return id, err
+		} else {
+			return "", err
+		}
 	}
 
-	return id
+	return id, nil
 }
 
-func (repo *InMemoryShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList) {
+func (repo *InMemoryShortURLRepository) StoreBatch(ctx context.Context, listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList, err error) {
 	for _, item := range listOriginal {
-		err := cont.add(item.CorrelationID, item.OriginalURL)
-		if err != nil {
-			logger.Log.Debug("could not add item",
-				zap.Error(err),
-				zap.Any("item", item),
-			)
-			return nil
-		}
-
-		listShorten = append(listShorten, jsonModel.BatchURLList{
+		id, err := cont.add(item.CorrelationID, item.OriginalURL)
+		listShortenItem := jsonModel.BatchURLList{
 			CorrelationID: item.CorrelationID,
 			ShortURL:      config.Values.URLAddress + "/" + item.CorrelationID,
-		})
+		}
+
+		if err != nil {
+			if errors.Is(err, errorsInternal.ErrConflictOriginalURL) || errors.Is(err, errorsInternal.ErrConflictID) {
+				listShortenItem.Err = fmt.Sprint(err)
+				if errors.Is(err, errorsInternal.ErrConflictID) {
+					listShortenItem.CorrelationID = id
+				}
+			} else {
+				logger.Log.Debug("could not add item",
+					zap.Error(err),
+					zap.Any("item", item),
+				)
+				return nil, err
+			}
+		}
+
+		listShorten = append(listShorten, listShortenItem)
 	}
 
-	return listShorten
+	return listShorten, err
 }
