@@ -39,7 +39,7 @@ func (su *ShortUrlsService) apiShorten(res http.ResponseWriter, req *http.Reques
 
 	url := requestData.URL
 
-	id, err := su.repo.Store(url)
+	id, err := su.repo.Store(req.Context(), url)
 
 	if len(id) == 0 {
 		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

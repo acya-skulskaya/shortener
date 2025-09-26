@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/acya-skulskaya/shortener/internal/config"
 	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/stretchr/testify/assert"
@@ -36,7 +37,7 @@ func Test_apiPageByID(t *testing.T) {
 
 	repo := &shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"}
 	shortURLService := NewShortUrlsService(repo)
-	id, _ := repo.Store("https://test.com")
+	id, _ := repo.Store(context.Background(), "https://test.com")
 
 	router := NewRouter(shortURLService)
 	testServer := httptest.NewServer(router)

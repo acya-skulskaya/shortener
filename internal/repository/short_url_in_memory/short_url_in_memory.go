@@ -1,6 +1,7 @@
 package shorturlinmemory
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/acya-skulskaya/shortener/internal/config"
@@ -44,11 +45,11 @@ func (c *Container) getURL(id string) string {
 
 var cont = Container{shortUrls: make(map[string]string)}
 
-func (repo *InMemoryShortURLRepository) Get(id string) (originalURL string) {
+func (repo *InMemoryShortURLRepository) Get(ctx context.Context, id string) (originalURL string) {
 	return cont.getURL(id)
 }
 
-func (repo *InMemoryShortURLRepository) Store(originalURL string) (id string, err error) {
+func (repo *InMemoryShortURLRepository) Store(ctx context.Context, originalURL string) (id string, err error) {
 	id = helpers.RandStringRunes(10)
 
 	id, err = cont.add(id, originalURL)
@@ -63,7 +64,7 @@ func (repo *InMemoryShortURLRepository) Store(originalURL string) (id string, er
 	return id, nil
 }
 
-func (repo *InMemoryShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList, err error) {
+func (repo *InMemoryShortURLRepository) StoreBatch(ctx context.Context, listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList, err error) {
 	for _, item := range listOriginal {
 		id, err := cont.add(item.CorrelationID, item.OriginalURL)
 		listShortenItem := jsonModel.BatchURLList{

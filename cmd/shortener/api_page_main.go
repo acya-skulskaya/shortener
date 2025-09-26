@@ -24,7 +24,7 @@ func (su *ShortUrlsService) apiPageMain(res http.ResponseWriter, req *http.Reque
 	}
 
 	url := string(body)
-	id, err := su.repo.Store(url)
+	id, err := su.repo.Store(req.Context(), url)
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 

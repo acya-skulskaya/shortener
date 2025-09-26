@@ -17,7 +17,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
-	"time"
 )
 
 type InDBShortURLRepository struct {
@@ -72,10 +71,7 @@ func runMigrations() error {
 	return nil
 }
 
-func (repo *InDBShortURLRepository) Get(id string) (originalURL string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-
+func (repo *InDBShortURLRepository) Get(ctx context.Context, id string) (originalURL string) {
 	row := repo.DB.QueryRowContext(ctx,
 		"SELECT original_url FROM short_urls where id = $1", id)
 
@@ -90,10 +86,8 @@ func (repo *InDBShortURLRepository) Get(id string) (originalURL string) {
 	return originalURL
 }
 
-func (repo *InDBShortURLRepository) Store(originalURL string) (id string, err error) {
+func (repo *InDBShortURLRepository) Store(ctx context.Context, originalURL string) (id string, err error) {
 	id = helpers.RandStringRunes(10)
-
-	ctx := context.Background()
 
 	_, err = repo.DB.ExecContext(ctx,
 		"INSERT INTO short_urls (id, short_url, original_url) VALUES ($1, $2, $3)",
@@ -125,7 +119,7 @@ func (repo *InDBShortURLRepository) Store(originalURL string) (id string, err er
 	return id, nil
 }
 
-func (repo *InDBShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList, err error) {
+func (repo *InDBShortURLRepository) StoreBatch(ctx context.Context, listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList, err error) {
 	tx, err := repo.DB.Begin()
 	if err != nil {
 		logger.Log.Debug("could not start transaction",
@@ -133,8 +127,6 @@ func (repo *InDBShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURL
 		)
 		return nil, err
 	}
-
-	ctx := context.Background()
 
 	stmt, err := tx.PrepareContext(ctx,
 		"INSERT INTO short_urls (id, short_url, original_url) VALUES ($1, $2, $3)")

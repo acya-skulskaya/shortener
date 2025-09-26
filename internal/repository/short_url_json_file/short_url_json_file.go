@@ -1,6 +1,7 @@
 package shorturljsonfile
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/acya-skulskaya/shortener/internal/config"
@@ -15,7 +16,7 @@ type JSONFileShortURLRepository struct {
 	FileStoragePath string
 }
 
-func (repo *JSONFileShortURLRepository) Get(id string) (originalURL string) {
+func (repo *JSONFileShortURLRepository) Get(ctx context.Context, id string) (originalURL string) {
 	reader, err := NewFileReader(repo.FileStoragePath)
 	if err != nil {
 		logger.Log.Debug("could not create reader",
@@ -46,7 +47,7 @@ func (repo *JSONFileShortURLRepository) Get(id string) (originalURL string) {
 	return ""
 }
 
-func (repo *JSONFileShortURLRepository) Store(originalURL string) (id string, err error) {
+func (repo *JSONFileShortURLRepository) Store(ctx context.Context, originalURL string) (id string, err error) {
 	reader, err := NewFileReader(repo.FileStoragePath)
 	if err != nil {
 		logger.Log.Debug("could not create reader",
@@ -100,7 +101,7 @@ func (repo *JSONFileShortURLRepository) Store(originalURL string) (id string, er
 	return id, nil
 }
 
-func (repo *JSONFileShortURLRepository) StoreBatch(listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList, err error) {
+func (repo *JSONFileShortURLRepository) StoreBatch(ctx context.Context, listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList, err error) {
 	writer, err := NewFileWriter(repo.FileStoragePath)
 	if err != nil {
 		logger.Log.Debug("could not create file writer",
