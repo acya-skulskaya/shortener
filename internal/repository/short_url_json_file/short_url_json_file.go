@@ -47,7 +47,33 @@ func (repo *JSONFileShortURLRepository) Get(ctx context.Context, id string) (ori
 	return ""
 }
 
-func (repo *JSONFileShortURLRepository) Store(ctx context.Context, originalURL string) (id string, err error) {
+func (repo *JSONFileShortURLRepository) GetUserUrls(ctx context.Context, userID string) (list []jsonModel.BatchURLList, err error) {
+	reader, err := NewFileReader(repo.FileStoragePath)
+	if err != nil {
+		logger.Log.Debug("could not create reader",
+			zap.Error(err),
+			zap.String("file", repo.FileStoragePath),
+		)
+		return nil, err
+	}
+	defer reader.Close()
+	rows, err := reader.ReadFile()
+
+	for _, row := range rows {
+		if row.UserID == userID {
+			listItem := jsonModel.BatchURLList{
+				OriginalURL: row.OriginalURL,
+				ShortURL:    config.Values.URLAddress + "/" + row.ID,
+			}
+
+			list = append(list, listItem)
+		}
+	}
+
+	return list, err
+}
+
+func (repo *JSONFileShortURLRepository) Store(ctx context.Context, originalURL string, userID string) (id string, err error) {
 	reader, err := NewFileReader(repo.FileStoragePath)
 	if err != nil {
 		logger.Log.Debug("could not create reader",
@@ -71,6 +97,7 @@ func (repo *JSONFileShortURLRepository) Store(ctx context.Context, originalURL s
 		ID:          id,
 		ShortURL:    config.Values.URLAddress + "/" + id,
 		OriginalURL: originalURL,
+		UserID:      userID,
 	}
 
 	writer, err := NewFileWriter(repo.FileStoragePath)
@@ -101,7 +128,7 @@ func (repo *JSONFileShortURLRepository) Store(ctx context.Context, originalURL s
 	return id, nil
 }
 
-func (repo *JSONFileShortURLRepository) StoreBatch(ctx context.Context, listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList, err error) {
+func (repo *JSONFileShortURLRepository) StoreBatch(ctx context.Context, listOriginal []jsonModel.BatchURLList, userID string) (listShorten []jsonModel.BatchURLList, err error) {
 	writer, err := NewFileWriter(repo.FileStoragePath)
 	if err != nil {
 		logger.Log.Debug("could not create file writer",
@@ -149,6 +176,7 @@ func (repo *JSONFileShortURLRepository) StoreBatch(ctx context.Context, listOrig
 				ID:          item.CorrelationID,
 				OriginalURL: item.OriginalURL,
 				ShortURL:    config.Values.URLAddress + "/" + item.CorrelationID,
+				UserID:      userID,
 			})
 		}
 
