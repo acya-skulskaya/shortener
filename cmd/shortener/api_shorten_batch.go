@@ -5,6 +5,7 @@ import (
 	"errors"
 	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
+	"github.com/acya-skulskaya/shortener/internal/middleware"
 	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
 	"go.uber.org/zap"
 	"io"
@@ -32,7 +33,7 @@ func (su *ShortUrlsService) apiShortenBatch(res http.ResponseWriter, req *http.R
 	res.Header().Set("Content-Type", "application/json")
 
 	ctx := req.Context()
-	userID := ctx.Value("userID").(string)
+	userID := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
 	listShortened, err := su.repo.StoreBatch(req.Context(), list, userID)
 	if err != nil && (errors.Is(err, errorsInternal.ErrConflictOriginalURL) || errors.Is(err, errorsInternal.ErrConflictID)) {
 		res.WriteHeader(http.StatusConflict)

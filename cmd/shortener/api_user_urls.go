@@ -3,13 +3,14 @@ package main
 import (
 	"encoding/json"
 	"github.com/acya-skulskaya/shortener/internal/logger"
+	"github.com/acya-skulskaya/shortener/internal/middleware"
 	"go.uber.org/zap"
 	"net/http"
 )
 
 func (su *ShortUrlsService) apiUserURLs(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	userID := ctx.Value("userID").(string)
+	userID := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
 
 	list, err := su.repo.GetUserUrls(req.Context(), userID)
 	if err != nil {

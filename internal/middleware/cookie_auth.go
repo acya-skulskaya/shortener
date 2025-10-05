@@ -14,16 +14,17 @@ import (
 )
 
 const (
-	SECRET_KEY       = "x35k9f"
-	AUTH_COOKIE_NAME = "auth"
+	SecretKey            = "x35k9f"
+	AuthCookieName       = "auth"
+	AuthContextKeyUserID = "userID"
 )
 
-// Выдавать пользователю симметрично подписанную куку, содержащую уникальный идентификатор пользователя, если такой куки не существует или она не проходит проверку подлинности.
+type AuthContextKey string
 
 func CookieAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookieValue := ""
-		cookie, err := r.Cookie(AUTH_COOKIE_NAME)
+		cookie, err := r.Cookie(AuthCookieName)
 		if err != nil {
 			switch {
 			case errors.Is(err, http.ErrNoCookie):
@@ -39,7 +40,7 @@ func CookieAuth(next http.Handler) http.Handler {
 
 		if cookieValue == "" {
 			logger.Log.Info("auth cookie is empty, will create a new one")
-			token, err := BuildJWTString()
+			token, err := buildJWTString()
 			if err != nil {
 				logger.Log.Debug("could not create token string", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
@@ -47,7 +48,7 @@ func CookieAuth(next http.Handler) http.Handler {
 			}
 
 			cookie := http.Cookie{
-				Name:     AUTH_COOKIE_NAME,
+				Name:     AuthCookieName,
 				Value:    token,
 				Path:     "/",
 				HttpOnly: true,
@@ -59,7 +60,7 @@ func CookieAuth(next http.Handler) http.Handler {
 			cookieValue = token
 		}
 
-		userID, err := GetUserID(cookieValue)
+		userID, err := getUserID(cookieValue)
 		if err != nil {
 			if errors.Is(err, errorsInternal.ErrTokenIsNotValid) {
 				w.WriteHeader(http.StatusUnauthorized)
@@ -76,7 +77,7 @@ func CookieAuth(next http.Handler) http.Handler {
 		}
 
 		logger.Log.Info("got user id", zap.String("userID", userID))
-		ctx := context.WithValue(r.Context(), "userID", userID)
+		ctx := context.WithValue(r.Context(), AuthContextKey(AuthContextKeyUserID), userID)
 		r = r.WithContext(ctx)
 
 		// передаём управление хендлеру
@@ -84,15 +85,15 @@ func CookieAuth(next http.Handler) http.Handler {
 	})
 }
 
-type Claims struct {
+type claims struct {
 	jwt.RegisteredClaims
 	UserID string
 }
 
-// BuildJWTString создаёт токен и возвращает его в виде строки.
-func BuildJWTString() (string, error) {
-	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
+// buildJWTString создаёт токен и возвращает его в виде строки.
+func buildJWTString() (string, error) {
+	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			// когда создан токен
 			IssuedAt: jwt.NewNumericDate(time.Now()),
@@ -101,7 +102,7 @@ func BuildJWTString() (string, error) {
 	})
 
 	// создаём строку токена
-	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	tokenString, err := token.SignedString([]byte(SecretKey))
 	if err != nil {
 		return "", err
 	}
@@ -110,14 +111,14 @@ func BuildJWTString() (string, error) {
 	return tokenString, nil
 }
 
-func GetUserID(tokenString string) (userID string, err error) {
-	claims := &Claims{}
+func getUserID(tokenString string) (userID string, err error) {
+	claims := &claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
 		func(t *jwt.Token) (interface{}, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
-			return []byte(SECRET_KEY), nil
+			return []byte(SecretKey), nil
 		})
 	if err != nil {
 		return "", errorsInternal.ErrTokenIsNotValid

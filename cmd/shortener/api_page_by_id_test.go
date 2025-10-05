@@ -37,7 +37,7 @@ func Test_apiPageByID(t *testing.T) {
 
 	repo := &shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"}
 	shortURLService := NewShortUrlsService(repo)
-	id, _ := repo.Store(context.Background(), "https://test.com")
+	id, _ := repo.Store(context.Background(), "https://test.com", "userID123")
 
 	router := NewRouter(shortURLService)
 	testServer := httptest.NewServer(router)
