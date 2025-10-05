@@ -37,15 +37,22 @@ func Test_apiShorten(t *testing.T) {
 
 	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"})
 
+	router := NewRouter(shortURLService)
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			bodyReader := strings.NewReader(test.body)
-			request := httptest.NewRequest(test.method, "/", bodyReader)
-			// создаём новый Recorder
-			w := httptest.NewRecorder()
-			shortURLService.apiShorten(w, request)
+			request, err := http.NewRequest(test.method, testServer.URL+"/api/shorten", bodyReader)
+			require.NoError(t, err)
 
-			res := w.Result()
+			client := &http.Client{}
+
+			res, err := client.Do(request)
+			require.NoError(t, err)
+			defer res.Body.Close()
+
 			// проверяем код ответа
 			assert.Equal(t, test.expectedCode, res.StatusCode)
 			// проверяем Content-Type
@@ -53,11 +60,9 @@ func Test_apiShorten(t *testing.T) {
 			// получаем и проверяем тело запроса
 			defer res.Body.Close()
 			//resBody, err := io.ReadAll(res.Body)
-			_, err := io.ReadAll(res.Body)
+			_, err = io.ReadAll(res.Body)
 
 			require.NoError(t, err)
-			// TODO check id in db
-
 		})
 	}
 }
