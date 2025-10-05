@@ -23,6 +23,7 @@ func (su *ShortUrlsService) apiUserURLs(res http.ResponseWriter, req *http.Reque
 		return
 	}
 
+	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)
 
 	enc := json.NewEncoder(res)
