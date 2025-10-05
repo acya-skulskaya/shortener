@@ -12,6 +12,8 @@ func (su *ShortUrlsService) apiUserURLs(res http.ResponseWriter, req *http.Reque
 	ctx := req.Context()
 	userID := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
 
+	res.Header().Set("Content-Type", "application/json")
+
 	list, err := su.repo.GetUserUrls(req.Context(), userID)
 	if err != nil {
 		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -23,7 +25,6 @@ func (su *ShortUrlsService) apiUserURLs(res http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)
 
 	enc := json.NewEncoder(res)
