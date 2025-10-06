@@ -11,7 +11,6 @@ import (
 func (su *ShortUrlsService) apiUserURLs(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	userID := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
-
 	res.Header().Set("Content-Type", "application/json")
 
 	list, err := su.repo.GetUserUrls(req.Context(), userID)

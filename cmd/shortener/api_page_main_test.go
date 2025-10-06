@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 )
@@ -33,6 +34,8 @@ func Test_apiPageMain(t *testing.T) {
 			},
 		},
 	}
+
+	os.Remove("./urls.json")
 
 	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"})
 

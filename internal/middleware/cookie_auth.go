@@ -47,16 +47,16 @@ func CookieAuth(next http.Handler) http.Handler {
 				return
 			}
 
-			cookie := http.Cookie{
+			authCookie := http.Cookie{
 				Name:     AuthCookieName,
 				Value:    token,
 				Path:     "/",
 				HttpOnly: true,
-				Secure:   true,
+				Secure:   false,
 				Expires:  time.Now().Add(time.Hour * 24 * 365),
 			}
 
-			http.SetCookie(w, &cookie)
+			http.SetCookie(w, &authCookie)
 			cookieValue = token
 		}
 

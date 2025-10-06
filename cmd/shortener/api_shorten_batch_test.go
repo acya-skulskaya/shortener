@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
@@ -38,6 +39,8 @@ func Test_apiShortenBatch(t *testing.T) {
 			expectedContentType: "application/json",
 		},
 	}
+
+	os.Remove("./urls.json")
 
 	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"})
 
