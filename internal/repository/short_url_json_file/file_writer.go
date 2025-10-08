@@ -27,17 +27,14 @@ func NewFileWriter(filename string) (*FileWriter, error) {
 	}, nil
 }
 
-func (p *FileWriter) WriteFile(repo *JSONFileShortURLRepository, row jsonModel.URLList) error {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-
+func (p *FileWriter) WriteFile(row jsonModel.URLList) error {
 	fileReader, err := NewFileReader(p.file.Name())
 	if err != nil {
 		return err
 	}
 	defer fileReader.Close()
 
-	list, err := fileReader.ReadFile(repo)
+	list, err := fileReader.ReadFile()
 	if err != nil {
 		return err
 	}
@@ -57,17 +54,14 @@ func (p *FileWriter) WriteFile(repo *JSONFileShortURLRepository, row jsonModel.U
 	return p.writer.Flush()
 }
 
-func (p *FileWriter) WriteFileRows(repo *JSONFileShortURLRepository, rows []jsonModel.URLList) error {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-
+func (p *FileWriter) WriteFileRows(rows []jsonModel.URLList) error {
 	fileReader, err := NewFileReader(p.file.Name())
 	if err != nil {
 		return err
 	}
 	defer fileReader.Close()
 
-	list, err := fileReader.ReadFile(repo)
+	list, err := fileReader.ReadFile()
 	if err != nil {
 		return err
 	}
@@ -88,10 +82,7 @@ func (p *FileWriter) WriteFileRows(repo *JSONFileShortURLRepository, rows []json
 	return p.writer.Flush()
 }
 
-func (p *FileWriter) OverwriteFile(repo *JSONFileShortURLRepository, rows []jsonModel.URLList) error {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-
+func (p *FileWriter) OverwriteFile(rows []jsonModel.URLList) error {
 	data, err := json.Marshal(rows)
 	if err != nil {
 		return fmt.Errorf("could not encode json: %w", err)

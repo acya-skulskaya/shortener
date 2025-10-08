@@ -8,6 +8,9 @@ import (
 )
 
 func (repo *JSONFileShortURLRepository) Get(ctx context.Context, id string) (originalURL string, err error) {
+	repo.mu.RLock()
+	defer repo.mu.RUnlock()
+
 	reader, err := NewFileReader(repo.FileStoragePath)
 	if err != nil {
 		logger.Log.Debug("could not create reader",
@@ -19,7 +22,7 @@ func (repo *JSONFileShortURLRepository) Get(ctx context.Context, id string) (ori
 	}
 	defer reader.Close()
 
-	list, err := reader.ReadFile(repo)
+	list, err := reader.ReadFile()
 	if err != nil {
 		logger.Log.Debug("could not read file",
 			zap.Error(err),

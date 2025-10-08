@@ -12,6 +12,9 @@ import (
 )
 
 func (repo *JSONFileShortURLRepository) StoreBatch(ctx context.Context, listOriginal []jsonModel.BatchURLList, userID string) (listShorten []jsonModel.BatchURLList, err error) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+
 	writer, err := NewFileWriter(repo.FileStoragePath)
 	if err != nil {
 		logger.Log.Debug("could not create file writer",
@@ -29,7 +32,7 @@ func (repo *JSONFileShortURLRepository) StoreBatch(ctx context.Context, listOrig
 		return nil, err
 	}
 	defer reader.Close()
-	existingRows, err := reader.ReadFile(repo)
+	existingRows, err := reader.ReadFile()
 
 	var rows []jsonModel.URLList
 
@@ -66,7 +69,7 @@ func (repo *JSONFileShortURLRepository) StoreBatch(ctx context.Context, listOrig
 		listShorten = append(listShorten, listShortenItem)
 	}
 
-	err = writer.WriteFileRows(repo, rows)
+	err = writer.WriteFileRows(rows)
 	if err != nil {
 		logger.Log.Debug("could not write short urls to file",
 			zap.Error(err),

@@ -12,6 +12,9 @@ import (
 )
 
 func (repo *JSONFileShortURLRepository) Store(ctx context.Context, originalURL string, userID string) (id string, err error) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+
 	reader, err := NewFileReader(repo.FileStoragePath)
 	if err != nil {
 		logger.Log.Debug("could not create reader",
@@ -21,7 +24,7 @@ func (repo *JSONFileShortURLRepository) Store(ctx context.Context, originalURL s
 		return "", err
 	}
 	defer reader.Close()
-	existingRows, err := reader.ReadFile(repo)
+	existingRows, err := reader.ReadFile()
 
 	for _, existingRow := range existingRows {
 		if existingRow.OriginalURL == originalURL {
@@ -48,7 +51,7 @@ func (repo *JSONFileShortURLRepository) Store(ctx context.Context, originalURL s
 		)
 		return "", err
 	}
-	err = writer.WriteFile(repo, row)
+	err = writer.WriteFile(row)
 	if err != nil {
 		if errors.Is(err, errorsInternal.ErrConflictOriginalURL) || errors.Is(err, errorsInternal.ErrConflictID) {
 			return id, err

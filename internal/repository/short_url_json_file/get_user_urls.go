@@ -9,6 +9,9 @@ import (
 )
 
 func (repo *JSONFileShortURLRepository) GetUserUrls(ctx context.Context, userID string) (list []jsonModel.BatchURLList, err error) {
+	repo.mu.RLock()
+	defer repo.mu.RUnlock()
+
 	reader, err := NewFileReader(repo.FileStoragePath)
 	if err != nil {
 		logger.Log.Debug("could not create reader",
@@ -18,7 +21,7 @@ func (repo *JSONFileShortURLRepository) GetUserUrls(ctx context.Context, userID 
 		return nil, err
 	}
 	defer reader.Close()
-	rows, err := reader.ReadFile(repo)
+	rows, err := reader.ReadFile()
 
 	for _, row := range rows {
 		if row.UserID == userID {
