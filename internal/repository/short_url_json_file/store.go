@@ -21,7 +21,7 @@ func (repo *JSONFileShortURLRepository) Store(ctx context.Context, originalURL s
 		return "", err
 	}
 	defer reader.Close()
-	existingRows, err := reader.ReadFile()
+	existingRows, err := reader.ReadFile(repo)
 
 	for _, existingRow := range existingRows {
 		if existingRow.OriginalURL == originalURL {
@@ -48,7 +48,7 @@ func (repo *JSONFileShortURLRepository) Store(ctx context.Context, originalURL s
 		)
 		return "", err
 	}
-	err = writer.WriteFile(row)
+	err = writer.WriteFile(repo, row)
 	if err != nil {
 		if errors.Is(err, errorsInternal.ErrConflictOriginalURL) || errors.Is(err, errorsInternal.ErrConflictID) {
 			return id, err

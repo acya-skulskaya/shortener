@@ -18,7 +18,7 @@ func (repo *JSONFileShortURLRepository) GetUserUrls(ctx context.Context, userID 
 		return nil, err
 	}
 	defer reader.Close()
-	rows, err := reader.ReadFile()
+	rows, err := reader.ReadFile(repo)
 
 	for _, row := range rows {
 		if row.UserID == userID {

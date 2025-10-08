@@ -27,7 +27,9 @@ func NewFileReader(filename string) (*FileReader, error) {
 	}, nil
 }
 
-func (c *FileReader) ReadFile() (list []jsonModel.URLList, error error) {
+func (c *FileReader) ReadFile(repo *JSONFileShortURLRepository) (list []jsonModel.URLList, error error) {
+	repo.mu.RLock()
+	defer repo.mu.RUnlock()
 	// одиночное сканирование до следующей строки
 	if !c.scanner.Scan() {
 		return nil, c.scanner.Err()

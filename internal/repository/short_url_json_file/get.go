@@ -19,7 +19,7 @@ func (repo *JSONFileShortURLRepository) Get(ctx context.Context, id string) (ori
 	}
 	defer reader.Close()
 
-	list, err := reader.ReadFile()
+	list, err := reader.ReadFile(repo)
 	if err != nil {
 		logger.Log.Debug("could not read file",
 			zap.Error(err),

@@ -29,7 +29,7 @@ func (repo *JSONFileShortURLRepository) StoreBatch(ctx context.Context, listOrig
 		return nil, err
 	}
 	defer reader.Close()
-	existingRows, err := reader.ReadFile()
+	existingRows, err := reader.ReadFile(repo)
 
 	var rows []jsonModel.URLList
 
@@ -66,7 +66,7 @@ func (repo *JSONFileShortURLRepository) StoreBatch(ctx context.Context, listOrig
 		listShorten = append(listShorten, listShortenItem)
 	}
 
-	err = writer.WriteFileRows(rows)
+	err = writer.WriteFileRows(repo, rows)
 	if err != nil {
 		logger.Log.Debug("could not write short urls to file",
 			zap.Error(err),

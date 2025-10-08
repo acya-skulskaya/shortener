@@ -19,7 +19,7 @@ func checkAndGetIdsInFile(repo *JSONFileShortURLRepository, list []string, userI
 		return []jsonModel.URLList{}, err
 	}
 	defer reader.Close()
-	existingRows, err = reader.ReadFile()
+	existingRows, err = reader.ReadFile(repo)
 
 	for _, id := range list {
 		idExists := false
@@ -36,7 +36,7 @@ func checkAndGetIdsInFile(repo *JSONFileShortURLRepository, list []string, userI
 			}
 		}
 
-		if idExists == false {
+		if !idExists {
 			return []jsonModel.URLList{}, errorsInternal.ErrIDNotFound
 		}
 	}
@@ -68,7 +68,7 @@ func (repo *JSONFileShortURLRepository) DeleteUserUrls(ctx context.Context, list
 			logger.Log.Info("item was marked as deleted", zap.String("id", existingRow.ID))
 		}
 
-		err = writer.OverwriteFile(existingRows)
+		err = writer.OverwriteFile(repo, existingRows)
 		if err != nil {
 			logger.Log.Debug("could not delete ulrs in file",
 				zap.Error(err),
