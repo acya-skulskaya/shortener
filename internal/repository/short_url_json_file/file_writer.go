@@ -81,3 +81,18 @@ func (p *FileWriter) WriteFileRows(rows []jsonModel.URLList) error {
 	// записываем буфер в файл
 	return p.writer.Flush()
 }
+
+func (p *FileWriter) OverwriteFile(rows []jsonModel.URLList) error {
+	data, err := json.Marshal(rows)
+	if err != nil {
+		return fmt.Errorf("could not encode json: %w", err)
+	}
+
+	// записываем событие в буфер
+	if _, err := p.writer.Write(data); err != nil {
+		return err
+	}
+
+	// записываем буфер в файл
+	return p.writer.Flush()
+}
