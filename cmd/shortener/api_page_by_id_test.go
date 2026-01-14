@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
@@ -35,9 +36,11 @@ func Test_apiPageByID(t *testing.T) {
 		},
 	}
 
+	os.Remove("./urls.json")
+
 	repo := &shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"}
 	shortURLService := NewShortUrlsService(repo)
-	id, _ := repo.Store(context.Background(), "https://test.com")
+	id, _ := repo.Store(context.Background(), "https://test.com", "userID123")
 
 	router := NewRouter(shortURLService)
 	testServer := httptest.NewServer(router)

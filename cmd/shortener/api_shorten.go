@@ -6,6 +6,7 @@ import (
 	"github.com/acya-skulskaya/shortener/internal/config"
 	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
+	"github.com/acya-skulskaya/shortener/internal/middleware"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -38,8 +39,9 @@ func (su *ShortUrlsService) apiShorten(res http.ResponseWriter, req *http.Reques
 	}
 
 	url := requestData.URL
-
-	id, err := su.repo.Store(req.Context(), url)
+	ctx := req.Context()
+	userID := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
+	id, err := su.repo.Store(req.Context(), url, userID)
 
 	if len(id) == 0 {
 		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

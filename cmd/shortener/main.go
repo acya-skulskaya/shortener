@@ -65,12 +65,14 @@ func NewRouter(su *ShortUrlsService) *chi.Mux {
 
 	router.Use(middleware.RequestLogger)
 	router.Use(middleware.RequestCompressor)
+	router.Use(middleware.CookieAuth)
 
 	router.Post("/", su.apiPageMain)
 	router.Get("/{id}", su.apiPageByID)
 	router.Get("/ping", su.apiPingDB)
 	router.Post("/api/shorten", su.apiShorten)
 	router.Post("/api/shorten/batch", su.apiShortenBatch)
+	router.Get("/api/user/urls", su.apiUserURLs)
 
 	return router
 }

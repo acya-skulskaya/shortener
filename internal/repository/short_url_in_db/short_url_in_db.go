@@ -47,6 +47,7 @@ func runMigrations() error {
 
 	m, err := migrate.New(
 		"file://./migrations",
+		//"file://./../../migrations",
 		dbDSN,
 	)
 	if err != nil {
@@ -86,12 +87,40 @@ func (repo *InDBShortURLRepository) Get(ctx context.Context, id string) (origina
 	return originalURL
 }
 
-func (repo *InDBShortURLRepository) Store(ctx context.Context, originalURL string) (id string, err error) {
+func (repo *InDBShortURLRepository) GetUserUrls(ctx context.Context, userID string) (list []jsonModel.BatchURLList, err error) {
+	rows, err := repo.DB.QueryContext(ctx, "SELECT short_url, original_url from short_urls WHERE user_id = $1", userID)
+	if err != nil {
+		logger.Log.Debug("could not query from db", zap.Error(err))
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		listShortenItem := jsonModel.BatchURLList{}
+		err = rows.Scan(&listShortenItem.ShortURL, &listShortenItem.OriginalURL)
+		if err != nil {
+			logger.Log.Debug("could not scan row", zap.Error(err))
+			return nil, err
+		}
+
+		list = append(list, listShortenItem)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		logger.Log.Debug("error getting user urls", zap.Error(err))
+		return nil, err
+	}
+
+	return list, err
+}
+
+func (repo *InDBShortURLRepository) Store(ctx context.Context, originalURL string, userID string) (id string, err error) {
 	id = helpers.RandStringRunes(10)
 
 	_, err = repo.DB.ExecContext(ctx,
-		"INSERT INTO short_urls (id, short_url, original_url) VALUES ($1, $2, $3)",
-		id, config.Values.URLAddress+"/"+id, originalURL)
+		"INSERT INTO short_urls (id, short_url, original_url, user_id) VALUES ($1, $2, $3, $4)",
+		id, config.Values.URLAddress+"/"+id, originalURL, userID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
@@ -119,7 +148,7 @@ func (repo *InDBShortURLRepository) Store(ctx context.Context, originalURL strin
 	return id, nil
 }
 
-func (repo *InDBShortURLRepository) StoreBatch(ctx context.Context, listOriginal []jsonModel.BatchURLList) (listShorten []jsonModel.BatchURLList, err error) {
+func (repo *InDBShortURLRepository) StoreBatch(ctx context.Context, listOriginal []jsonModel.BatchURLList, userID string) (listShorten []jsonModel.BatchURLList, err error) {
 	tx, err := repo.DB.Begin()
 	if err != nil {
 		logger.Log.Debug("could not start transaction",
@@ -129,7 +158,7 @@ func (repo *InDBShortURLRepository) StoreBatch(ctx context.Context, listOriginal
 	}
 
 	stmt, err := tx.PrepareContext(ctx,
-		"INSERT INTO short_urls (id, short_url, original_url) VALUES ($1, $2, $3)")
+		"INSERT INTO short_urls (id, short_url, original_url, user_id) VALUES ($1, $2, $3, $4)")
 	if err != nil {
 		logger.Log.Debug("could not prepare statement",
 			zap.Error(err),
@@ -146,7 +175,7 @@ func (repo *InDBShortURLRepository) StoreBatch(ctx context.Context, listOriginal
 			ShortURL:      config.Values.URLAddress + "/" + item.CorrelationID,
 		}
 
-		_, err := stmt.ExecContext(ctx, item.CorrelationID, item.ShortURL, item.OriginalURL)
+		_, err := stmt.ExecContext(ctx, item.CorrelationID, config.Values.URLAddress+"/"+item.CorrelationID, item.OriginalURL, userID)
 		if err != nil {
 			// если ошибка, то откатываем изменения
 			tx.Rollback()

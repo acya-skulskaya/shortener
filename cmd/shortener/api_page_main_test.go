@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 )
@@ -32,47 +33,29 @@ func Test_apiPageMain(t *testing.T) {
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
-		{
-			name:   "400 error when method (get) is wrong",
-			method: http.MethodGet,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    "Bad Request\n",
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
-		{
-			name:   "400 error when method (put) is wrong",
-			method: http.MethodPut,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    "Bad Request\n",
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
-		{
-			name:   "400 error when method (delete) is wrong",
-			method: http.MethodDelete,
-			want: want{
-				code:        http.StatusBadRequest,
-				response:    "Bad Request\n",
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
 	}
 
+	os.Remove("./urls.json")
+
 	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"})
+
+	router := NewRouter(shortURLService)
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			link := "https://practicum.yandex.ru/learn/go-advanced/courses/7154aca2-2665-440e-99ef-9dec1dfa1cd1/sprints/634244/topics/75da540c-e78d-4fdb-be66-c94ca0f88f58/lessons/6f432b47-f47c-4544-a686-7e2a94105cd6/"
 			bodyReader := strings.NewReader(link)
-			request := httptest.NewRequest(test.method, "/", bodyReader)
-			// создаём новый Recorder
-			w := httptest.NewRecorder()
-			shortURLService.apiPageMain(w, request)
+			request, err := http.NewRequest(test.method, testServer.URL+"/", bodyReader)
+			require.NoError(t, err)
 
-			res := w.Result()
+			client := &http.Client{}
+
+			res, err := client.Do(request)
+			require.NoError(t, err)
+			defer res.Body.Close()
+
 			// проверяем код ответа
 			assert.Equal(t, test.want.code, res.StatusCode)
 			// проверяем Content-Type

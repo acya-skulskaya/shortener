@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
@@ -39,29 +40,35 @@ func Test_apiShortenBatch(t *testing.T) {
 		},
 	}
 
+	os.Remove("./urls.json")
+
 	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"})
+
+	router := NewRouter(shortURLService)
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			bodyReader := strings.NewReader(test.body)
-			request := httptest.NewRequest(test.method, "/", bodyReader)
-			// создаём новый Recorder
-			w := httptest.NewRecorder()
-			shortURLService.apiShortenBatch(w, request)
+			request, err := http.NewRequest(test.method, testServer.URL+"/api/shorten/batch", bodyReader)
+			require.NoError(t, err)
 
-			res := w.Result()
+			client := &http.Client{}
+
+			res, err := client.Do(request)
+			require.NoError(t, err)
+			defer res.Body.Close()
+
 			// проверяем код ответа
 			assert.Equal(t, test.expectedCode, res.StatusCode)
 			// проверяем Content-Type
 			assert.Equal(t, test.expectedContentType, res.Header.Get("Content-Type"))
 			// получаем и проверяем тело запроса
 			defer res.Body.Close()
-			//resBody, err := io.ReadAll(res.Body)
-			_, err := io.ReadAll(res.Body)
+			_, err = io.ReadAll(res.Body)
 
 			require.NoError(t, err)
-			// TODO check id in db
-
 		})
 	}
 }
