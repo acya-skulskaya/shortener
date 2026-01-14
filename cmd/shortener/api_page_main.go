@@ -26,7 +26,12 @@ func (su *ShortUrlsService) apiPageMain(res http.ResponseWriter, req *http.Reque
 
 	url := string(body)
 	ctx := req.Context()
-	userID := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
+	userID, ok := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
+	if !ok {
+		logger.Log.Debug("could nt get userID from context")
+		http.Error(res, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
 	id, err := su.repo.Store(ctx, url, userID)
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")

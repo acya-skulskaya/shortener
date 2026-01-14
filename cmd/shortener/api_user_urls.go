@@ -10,7 +10,12 @@ import (
 
 func (su *ShortUrlsService) apiUserURLs(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	userID := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
+	userID, ok := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
+	if !ok {
+		logger.Log.Debug("could nt get userID from context")
+		http.Error(res, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
 	res.Header().Set("Content-Type", "application/json")
 
 	list, err := su.repo.GetUserUrls(req.Context(), userID)

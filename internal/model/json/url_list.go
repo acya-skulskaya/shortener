@@ -5,4 +5,7 @@ type URLList struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 	UserID      string `json:"user_id"`
+	IsDeleted   int    `json:"is_deleted"`
 }
+
+type URLListBatch []URLList

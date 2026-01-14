@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -88,12 +87,9 @@ func Test_apiUserURLs(t *testing.T) {
 			// проверяем Content-Type
 			assert.Equal(t, test.want.contentType, response.Header.Get("Content-Type"))
 
-			body, err := io.ReadAll(response.Body)
-			require.NoError(t, err)
-
 			var list []jsonModel.BatchURLList
 
-			err = json.Unmarshal(body, &list)
+			err = json.NewDecoder(response.Body).Decode(&list)
 			require.NoError(t, err)
 			assert.Equal(t, test.want.numUrls, len(list))
 		})
