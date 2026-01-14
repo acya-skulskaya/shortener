@@ -2,35 +2,33 @@ package shorturlinmemory
 
 import (
 	"context"
-	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"go.uber.org/zap"
 )
 
-func (repo *InMemoryShortURLRepository) DeleteUserUrls(ctx context.Context, list []string, userID string) (err error) {
+func (repo *InMemoryShortURLRepository) DeleteUserUrls(ctx context.Context, list []string, userID string) {
 	for _, id := range list {
-		item, err := cont.getItem(id)
-		if err != nil {
-			return err
-		}
-		if item.userID != userID {
-			return errorsInternal.ErrUserIDUnauthorized
-		}
-		if item.isDeleted == 1 {
-			return errorsInternal.ErrIDDeleted
-		}
-	}
-
-	for _, id := range list {
-		go func(id string) {
-			err = cont.deleteItem(id)
-			if err != nil {
-				logger.Log.Debug("could not delete item", zap.String("id", id), zap.Error(err))
-			} else {
-				logger.Log.Info("item was deleted", zap.String("id", id))
+		go func(id string, userID string) {
+			item, errGet := cont.getItem(id)
+			if errGet != nil {
+				logger.Log.Debug("could not get item", zap.String("id", id), zap.String("userID", userID), zap.Error(errGet))
+				return
 			}
-		}(id)
-	}
+			if item.userID != userID {
+				logger.Log.Debug("id belongs to anther user", zap.String("id", id), zap.String("userID", userID))
+				return
+			}
+			if item.isDeleted == 1 {
+				logger.Log.Debug("id os already deleted", zap.String("id", id), zap.String("userID", userID))
+				return
+			}
 
-	return nil
+			errDel := cont.deleteItem(id)
+			if errDel != nil {
+				logger.Log.Debug("could not delete item", zap.String("id", id), zap.String("userID", userID), zap.Error(errDel))
+			} else {
+				logger.Log.Info("item was deleted", zap.String("id", id), zap.String("userID", userID))
+			}
+		}(id, userID)
+	}
 }

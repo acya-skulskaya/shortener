@@ -15,7 +15,7 @@ import (
 
 const (
 	SecretKey            = "x35k9f"
-	AuthCookieName       = "auth"
+	AuthCookieName       = "auth_shortener"
 	AuthContextKeyUserID = "userID"
 )
 

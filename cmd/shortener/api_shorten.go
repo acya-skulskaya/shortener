@@ -8,7 +8,6 @@ import (
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"github.com/acya-skulskaya/shortener/internal/middleware"
 	"go.uber.org/zap"
-	"io"
 	"net/http"
 )
 
@@ -21,16 +20,8 @@ type ResponseData struct {
 }
 
 func (su *ShortUrlsService) apiShorten(res http.ResponseWriter, req *http.Request) {
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		http.Error(res, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
-		return
-	}
-
 	var requestData RequestData
-
-	err = json.Unmarshal(body, &requestData)
-	if err != nil {
+	if err := json.NewDecoder(req.Body).Decode(&requestData); err != nil {
 		logger.Log.Debug("could not parse request body",
 			zap.Error(err),
 		)
@@ -40,7 +31,12 @@ func (su *ShortUrlsService) apiShorten(res http.ResponseWriter, req *http.Reques
 
 	url := requestData.URL
 	ctx := req.Context()
-	userID := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
+	userID, ok := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
+	if !ok {
+		logger.Log.Debug("could nt get userID from context")
+		http.Error(res, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
 	id, err := su.repo.Store(req.Context(), url, userID)
 
 	if len(id) == 0 {

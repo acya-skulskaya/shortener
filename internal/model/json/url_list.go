@@ -7,3 +7,5 @@ type URLList struct {
 	UserID      string `json:"user_id"`
 	IsDeleted   int    `json:"is_deleted"`
 }
+
+type URLListBatch []URLList
