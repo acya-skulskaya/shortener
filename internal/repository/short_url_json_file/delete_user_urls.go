@@ -2,37 +2,10 @@ package shorturljsonfile
 
 import (
 	"context"
-	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
-	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
 	"go.uber.org/zap"
 	"slices"
 )
-
-func checkAndGetIdsInFile(repo *JSONFileShortURLRepository, list []string, userID string) (existingRows []jsonModel.URLList, err error) {
-
-	for _, id := range list {
-		idExists := false
-		for _, existingRow := range existingRows {
-			if existingRow.ID != id {
-				continue
-			}
-			idExists = true
-			if existingRow.UserID != userID {
-				return []jsonModel.URLList{}, errorsInternal.ErrUserIDUnauthorized
-			}
-			if existingRow.IsDeleted == 1 {
-				return []jsonModel.URLList{}, errorsInternal.ErrIDDeleted
-			}
-		}
-
-		if !idExists {
-			return []jsonModel.URLList{}, errorsInternal.ErrIDNotFound
-		}
-	}
-
-	return existingRows, nil
-}
 
 func (repo *JSONFileShortURLRepository) DeleteUserUrls(ctx context.Context, list []string, userID string) {
 	repo.mu.Lock()
