@@ -11,6 +11,8 @@ type Config struct {
 	LogLevel        string
 	FileStoragePath string
 	DatabaseDSN     string
+	AuditFile       string
+	AuditURL        string
 }
 
 var Values Config
@@ -22,6 +24,8 @@ func Init() {
 	flag.StringVar(&cfg.LogLevel, "l", "debug", "log level")
 	flag.StringVar(&cfg.FileStoragePath, "f", "", "path to file with short urls")
 	flag.StringVar(&cfg.DatabaseDSN, "d", "", "connection settings for pgsql") // postgres://user:pass@localhost:5432/test-db?sslmode=disable
+	flag.StringVar(&cfg.AuditFile, "audit-file", "", "path to audit file")
+	flag.StringVar(&cfg.AuditURL, "audit-url", "", "url to submit audit data")
 
 	flag.Parse()
 
@@ -48,6 +52,16 @@ func Init() {
 	databaseDSN, ok := os.LookupEnv("DATABASE_DSN")
 	if ok {
 		cfg.DatabaseDSN = databaseDSN
+	}
+
+	auditFile, ok := os.LookupEnv("AUDIT_FILE")
+	if ok {
+		cfg.AuditFile = auditFile
+	}
+
+	auditURL, ok := os.LookupEnv("AUDIT_URL")
+	if ok {
+		cfg.AuditURL = auditURL
 	}
 
 	Values = cfg

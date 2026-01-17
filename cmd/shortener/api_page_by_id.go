@@ -4,9 +4,11 @@ import (
 	"errors"
 	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
+	models "github.com/acya-skulskaya/shortener/internal/model/json"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 func (su *ShortUrlsService) apiPageByID(res http.ResponseWriter, req *http.Request) {
@@ -39,6 +41,12 @@ func (su *ShortUrlsService) apiPageByID(res http.ResponseWriter, req *http.Reque
 			return
 		}
 	}
+
+	su.auditPublisher.Notify(models.AuditEvent{
+		Timestamp:   time.Now().Unix(),
+		Action:      models.AuditEventActionTypeFollow,
+		OriginalURL: url,
+	})
 
 	logger.Log.Info("got page",
 		zap.String("id", id),

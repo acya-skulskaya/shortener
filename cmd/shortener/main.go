@@ -4,6 +4,8 @@ import (
 	"github.com/acya-skulskaya/shortener/internal/config"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"github.com/acya-skulskaya/shortener/internal/middleware"
+	"github.com/acya-skulskaya/shortener/internal/observer/audit/publisher"
+	"github.com/acya-skulskaya/shortener/internal/observer/audit/subscribers"
 	interfaces "github.com/acya-skulskaya/shortener/internal/repository/interface"
 	shorturlindb "github.com/acya-skulskaya/shortener/internal/repository/short_url_in_db"
 	shorturlinmemory "github.com/acya-skulskaya/shortener/internal/repository/short_url_in_memory"
@@ -14,12 +16,14 @@ import (
 )
 
 type ShortUrlsService struct {
-	repo interfaces.ShortURLRepository
+	repo           interfaces.ShortURLRepository
+	auditPublisher publisher.Publisher
 }
 
-func NewShortUrlsService(su interfaces.ShortURLRepository) *ShortUrlsService {
+func NewShortUrlsService(su interfaces.ShortURLRepository, ap publisher.Publisher) *ShortUrlsService {
 	return &ShortUrlsService{
-		repo: su,
+		repo:           su,
+		auditPublisher: ap,
 	}
 }
 
@@ -30,17 +34,29 @@ func main() {
 		panic(err)
 	}
 
-	shortURLService := NewShortUrlsService(&shorturlinmemory.InMemoryShortURLRepository{})
+	auditPublisher := publisher.NewAuditPublisher()
+	if config.Values.AuditFile != "" || config.Values.AuditURL != "" {
+		if config.Values.AuditFile != "" {
+			fileAuditSubscriber := subscribers.NewFileAuditSubscriber(config.Values.AuditFile)
+			auditPublisher.Subscribe(fileAuditSubscriber)
+		}
+		if config.Values.AuditURL != "" {
+			httpAuditSubscriber := subscribers.NewHTTPAuditSubscriber(config.Values.AuditURL)
+			auditPublisher.Subscribe(httpAuditSubscriber)
+		}
+	}
+
+	shortURLService := NewShortUrlsService(&shorturlinmemory.InMemoryShortURLRepository{}, auditPublisher)
 	if len(config.Values.DatabaseDSN) != 0 {
 		db, err := shorturlindb.NewInDBShortURLRepository(config.Values.DatabaseDSN)
 		if err != nil {
 			panic(err)
 		}
 		defer db.Close()
-		shortURLService = NewShortUrlsService(&shorturlindb.InDBShortURLRepository{DB: db})
+		shortURLService = NewShortUrlsService(&shorturlindb.InDBShortURLRepository{DB: db}, auditPublisher)
 		logger.Log.Info("using db storage", zap.String("DatabaseDSN", config.Values.DatabaseDSN))
 	} else if len(config.Values.FileStoragePath) != 0 {
-		shortURLService = NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: config.Values.FileStoragePath})
+		shortURLService = NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: config.Values.FileStoragePath}, auditPublisher)
 		logger.Log.Info("using file storage", zap.String("FileStoragePath", config.Values.FileStoragePath))
 	} else {
 		logger.Log.Info("using in memory storage")

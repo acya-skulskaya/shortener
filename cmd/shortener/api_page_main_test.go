@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/acya-skulskaya/shortener/internal/observer/audit/publisher"
 	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,7 +38,8 @@ func Test_apiPageMain(t *testing.T) {
 
 	os.Remove("./urls.json")
 
-	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"})
+	auditPublisher := publisher.NewAuditPublisher()
+	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"}, auditPublisher)
 
 	router := NewRouter(shortURLService)
 	testServer := httptest.NewServer(router)
