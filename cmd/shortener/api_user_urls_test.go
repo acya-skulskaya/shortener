@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
+	"github.com/acya-skulskaya/shortener/internal/observer/audit/publisher"
 	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -41,8 +42,9 @@ func Test_apiUserURLs(t *testing.T) {
 
 	os.Remove("./urls.json")
 
+	auditPublisher := publisher.NewAuditPublisher()
 	repo := &shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"}
-	shortURLService := NewShortUrlsService(repo)
+	shortURLService := NewShortUrlsService(repo, auditPublisher)
 
 	router := NewRouter(shortURLService)
 	testServer := httptest.NewServer(router)
