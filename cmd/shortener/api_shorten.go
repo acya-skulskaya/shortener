@@ -49,7 +49,6 @@ func (su *ShortUrlsService) apiShorten(res http.ResponseWriter, req *http.Reques
 	res.Header().Set("Content-Type", "application/json")
 	if err != nil && errors.Is(err, errorsInternal.ErrConflictOriginalURL) {
 		res.WriteHeader(http.StatusConflict)
-		return
 	} else {
 		logger.Log.Info("short url was created",
 			zap.String("id", id),
