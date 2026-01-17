@@ -7,8 +7,10 @@ import (
 	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"github.com/acya-skulskaya/shortener/internal/middleware"
+	models "github.com/acya-skulskaya/shortener/internal/model/json"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 type RequestData struct {
@@ -46,7 +48,8 @@ func (su *ShortUrlsService) apiShorten(res http.ResponseWriter, req *http.Reques
 
 	res.Header().Set("Content-Type", "application/json")
 	if err != nil && errors.Is(err, errorsInternal.ErrConflictOriginalURL) {
-		res.WriteHeader(http.StatusConflict)
+		http.Error(res, http.StatusText(http.StatusConflict), http.StatusConflict)
+		return
 	} else {
 		logger.Log.Info("short url was created",
 			zap.String("id", id),
@@ -57,6 +60,13 @@ func (su *ShortUrlsService) apiShorten(res http.ResponseWriter, req *http.Reques
 	}
 
 	resp := ResponseData{Result: config.Values.URLAddress + "/" + id}
+
+	su.auditPublisher.Notify(models.AuditEvent{
+		Timestamp:   time.Now().Unix(),
+		Action:      models.AuditEventActionTypeShorten,
+		UserID:      userID,
+		OriginalURL: url,
+	})
 
 	// сериализуем ответ сервера
 	enc := json.NewEncoder(res)

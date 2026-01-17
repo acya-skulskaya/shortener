@@ -6,9 +6,11 @@ import (
 	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"github.com/acya-skulskaya/shortener/internal/middleware"
+	models "github.com/acya-skulskaya/shortener/internal/model/json"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
+	"time"
 )
 
 func (su *ShortUrlsService) apiPageMain(res http.ResponseWriter, req *http.Request) {
@@ -38,7 +40,8 @@ func (su *ShortUrlsService) apiPageMain(res http.ResponseWriter, req *http.Reque
 
 	if err != nil {
 		if errors.Is(err, errorsInternal.ErrConflictOriginalURL) {
-			res.WriteHeader(http.StatusConflict)
+			http.Error(res, http.StatusText(http.StatusConflict), http.StatusConflict)
+			return
 		} else {
 			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
@@ -50,6 +53,13 @@ func (su *ShortUrlsService) apiPageMain(res http.ResponseWriter, req *http.Reque
 		)
 		res.WriteHeader(http.StatusCreated)
 	}
+
+	su.auditPublisher.Notify(models.AuditEvent{
+		Timestamp:   time.Now().Unix(),
+		Action:      models.AuditEventActionTypeShorten,
+		UserID:      userID,
+		OriginalURL: url,
+	})
 
 	res.Write([]byte(config.Values.URLAddress + "/" + id))
 }
