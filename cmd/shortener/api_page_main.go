@@ -40,7 +40,7 @@ func (su *ShortUrlsService) apiPageMain(res http.ResponseWriter, req *http.Reque
 
 	if err != nil {
 		if errors.Is(err, errorsInternal.ErrConflictOriginalURL) {
-			http.Error(res, http.StatusText(http.StatusConflict), http.StatusConflict)
+			res.WriteHeader(http.StatusConflict)
 			return
 		} else {
 			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
