@@ -2,9 +2,10 @@ package shorturljsonfile
 
 import (
 	"context"
+	"slices"
+
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"go.uber.org/zap"
-	"slices"
 )
 
 func (repo *JSONFileShortURLRepository) DeleteUserUrls(ctx context.Context, list []string, userID string) {

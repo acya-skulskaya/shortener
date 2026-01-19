@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"database/sql"
+	"net/http"
+	"time"
+
 	"github.com/acya-skulskaya/shortener/internal/config"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
-	"net/http"
-	"time"
 )
 
 func (su *ShortUrlsService) apiPingDB(res http.ResponseWriter, req *http.Request) {

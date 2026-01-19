@@ -1,10 +1,11 @@
 package middleware
 
 import (
-	"github.com/acya-skulskaya/shortener/internal/logger"
-	"go.uber.org/zap"
 	"net/http"
 	"time"
+
+	"github.com/acya-skulskaya/shortener/internal/logger"
+	"go.uber.org/zap"
 )
 
 // RequestLogger HTTP middleware setting a value on the request context

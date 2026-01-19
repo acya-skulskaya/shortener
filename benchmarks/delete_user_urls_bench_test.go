@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	shorturlinmemory "github.com/acya-skulskaya/shortener/internal/repository/short_url_in_memory"
 	"testing"
+
+	shorturlinmemory "github.com/acya-skulskaya/shortener/internal/repository/short_url_in_memory"
 )
 
 func BenchmarkDeleteUserURLs(b *testing.B) {

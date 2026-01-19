@@ -3,12 +3,13 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+
 	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"github.com/acya-skulskaya/shortener/internal/middleware"
 	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 func (su *ShortUrlsService) apiShortenBatch(res http.ResponseWriter, req *http.Request) {

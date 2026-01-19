@@ -1,11 +1,12 @@
 package middleware
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/acya-skulskaya/shortener/internal/helpers"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"go.uber.org/zap"
-	"net/http"
-	"strings"
 )
 
 func RequestCompressor(next http.Handler) http.Handler {

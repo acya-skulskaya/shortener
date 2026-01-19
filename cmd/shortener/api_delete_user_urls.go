@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"github.com/acya-skulskaya/shortener/internal/middleware"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 func (su *ShortUrlsService) apiDeleteUserURLs(res http.ResponseWriter, req *http.Request) {

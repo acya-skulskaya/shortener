@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
+	"testing"
+
 	shorturlinmemory "github.com/acya-skulskaya/shortener/internal/repository/short_url_in_memory"
 	"github.com/google/uuid"
-	"testing"
 )
 
 func BenchmarkStore(b *testing.B) {

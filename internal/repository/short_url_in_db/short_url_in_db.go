@@ -2,6 +2,7 @@ package shorturlindb
 
 import (
 	"database/sql"
+
 	"github.com/acya-skulskaya/shortener/internal/config"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"github.com/golang-migrate/migrate/v4"

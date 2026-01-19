@@ -1,10 +1,6 @@
 package main
 
 import (
-	"github.com/acya-skulskaya/shortener/internal/observer/audit/publisher"
-	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +8,11 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/acya-skulskaya/shortener/internal/observer/audit/publisher"
+	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_apiPageMain(t *testing.T) {

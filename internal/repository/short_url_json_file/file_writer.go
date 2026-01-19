@@ -4,8 +4,9 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
 	"os"
+
+	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
 )
 
 type FileWriter struct {
