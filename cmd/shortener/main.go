@@ -16,13 +16,13 @@ import (
 )
 
 type ShortUrlsService struct {
-	repo           interfaces.ShortURLRepository
+	Repo           interfaces.ShortURLRepository
 	auditPublisher publisher.Publisher
 }
 
 func NewShortUrlsService(su interfaces.ShortURLRepository, ap publisher.Publisher) *ShortUrlsService {
 	return &ShortUrlsService{
-		repo:           su,
+		Repo:           su,
 		auditPublisher: ap,
 	}
 }
@@ -82,6 +82,15 @@ func NewRouter(su *ShortUrlsService) *chi.Mux {
 	router.Use(middleware.RequestLogger)
 	router.Use(middleware.RequestCompressor)
 	router.Use(middleware.CookieAuth)
+
+	// pprof
+	//router.Route("/debug/pprof", func(r chi.Router) {
+	//	r.Handle("/", http.HandlerFunc(pprof.Index))
+	//	r.Handle("/profile", http.HandlerFunc(pprof.Profile))
+	//	r.Handle("/symbol", http.HandlerFunc(pprof.Symbol))
+	//	r.Handle("/cmdline", http.HandlerFunc(pprof.Cmdline))
+	//	r.Handle("/heap", pprof.Handler("heap"))
+	//})
 
 	router.Post("/", su.apiPageMain)
 	router.Get("/{id}", su.apiPageByID)

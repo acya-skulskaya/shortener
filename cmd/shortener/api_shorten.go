@@ -39,7 +39,7 @@ func (su *ShortUrlsService) apiShorten(res http.ResponseWriter, req *http.Reques
 		http.Error(res, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	id, err := su.repo.Store(req.Context(), url, userID)
+	id, err := su.Repo.Store(req.Context(), url, userID)
 
 	if len(id) == 0 {
 		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

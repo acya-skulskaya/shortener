@@ -29,7 +29,7 @@ func (su *ShortUrlsService) apiDeleteUserURLs(res http.ResponseWriter, req *http
 	}
 	res.Header().Set("Content-Type", "application/json")
 
-	go su.repo.DeleteUserUrls(context.Background(), list, userID)
+	go su.Repo.DeleteUserUrls(context.Background(), list, userID)
 
 	res.WriteHeader(http.StatusAccepted)
 }

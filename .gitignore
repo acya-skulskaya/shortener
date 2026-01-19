@@ -24,3 +24,9 @@ vendor/
 
 cmd/shortener/urls.json
 cmd/shortener/audit.json
+
+benchmarks/benchmarks.test
+benchmarks/cpu.out
+benchmarks/mem.out
+
+profiles/short_url_in_memory.go_
