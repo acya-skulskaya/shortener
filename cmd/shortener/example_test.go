@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -25,7 +26,10 @@ func Example_apiPageMain_Test() {
 
 	client := &http.Client{}
 
-	res, _ := client.Do(request)
+	res, err := client.Do(request)
+	if err != nil {
+		fmt.Errorf("error executing request: %w", err)
+	}
 	defer res.Body.Close()
 
 	// Result:
@@ -49,7 +53,10 @@ func Example_apiDeleteUserURLs_Test() {
 
 	client := &http.Client{}
 
-	res, _ := client.Do(request)
+	res, err := client.Do(request)
+	if err != nil {
+		fmt.Errorf("error executing request: %w", err)
+	}
 	defer res.Body.Close()
 
 	// Result:
@@ -71,7 +78,10 @@ func Example_apiPageByID_Test() {
 
 	client := &http.Client{}
 
-	res, _ := client.Do(request)
+	res, err := client.Do(request)
+	if err != nil {
+		fmt.Errorf("error executing request: %w", err)
+	}
 	defer res.Body.Close()
 
 	// Result:
@@ -94,7 +104,10 @@ func Example_apiShorten_Test() {
 
 	client := &http.Client{}
 
-	res, _ := client.Do(request)
+	res, err := client.Do(request)
+	if err != nil {
+		fmt.Errorf("error executing request: %w", err)
+	}
 	defer res.Body.Close()
 
 	// Result:
@@ -120,7 +133,10 @@ func Example_apiShortenBatch_Test() {
 
 	client := &http.Client{}
 
-	res, _ := client.Do(request)
+	res, err := client.Do(request)
+	if err != nil {
+		fmt.Errorf("error executing request: %w", err)
+	}
 	defer res.Body.Close()
 
 	// Result:
@@ -152,7 +168,10 @@ func Example_apiUserURLs_Test() {
 
 	client := &http.Client{}
 
-	res, _ := client.Do(request)
+	res, err := client.Do(request)
+	if err != nil {
+		fmt.Errorf("error executing request: %w", err)
+	}
 	defer res.Body.Close()
 
 	// Result:
