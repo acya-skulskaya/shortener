@@ -10,6 +10,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// apiDeleteUserURLs handles the HTTP request to delete a list of IDS of shortened URLs created by the logged in user.
+// Endpoint: DELETE /api/user/urls
+// Expected request body: ["ExampleID1", "ExampleID1"]
+// Returns:
+//   - 202 Accepted on success
+//   - 401 Unauthorized if user is not authorized
+//   - 500 Internal Server Error on failure
 func (su *ShortUrlsService) apiDeleteUserURLs(res http.ResponseWriter, req *http.Request) {
 	var list []string
 

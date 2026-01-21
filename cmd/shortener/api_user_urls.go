@@ -2,12 +2,20 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"github.com/acya-skulskaya/shortener/internal/middleware"
 	"go.uber.org/zap"
-	"net/http"
 )
 
+// apiUserURLs handles the HTTP request to get a list of short URLs, that were added by an authenticated user
+// Endpoint: GET /api/user/urls
+// Returns:
+//   - 200 OK returns a list of short URLs
+//   - 204 No Content if an authenticated user has no added short URLs
+//   - 401 Unauthorized if user is not authorized
+//   - 500 Internal Server Error on failure
 func (su *ShortUrlsService) apiUserURLs(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	userID, ok := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)

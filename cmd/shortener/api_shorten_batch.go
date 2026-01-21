@@ -12,6 +12,14 @@ import (
 	"go.uber.org/zap"
 )
 
+// apiShorten handles the HTTP request to shorten a list of URLs in the request body in JSON format with IDs and return a list of shortened URLs with ID in JSON format
+// Endpoint: POST /api/shorten/batch
+// Expected request body: [{"correlation_id":"example123","original_url":"http://example.test/1"},{"correlation_id":"example456","original_url":"http://example.test/2"}]
+// Returns:
+//   - 201 Created when URLs were successfully shortened
+//   - 401 Unauthorized if user is not authorized
+//   - 409 Conflict when one of URLs in the request was already shortened
+//   - 500 Internal Server Error on failure
 func (su *ShortUrlsService) apiShortenBatch(res http.ResponseWriter, req *http.Request) {
 	var list []jsonModel.BatchURLList
 	if err := json.NewDecoder(req.Body).Decode(&list); err != nil {

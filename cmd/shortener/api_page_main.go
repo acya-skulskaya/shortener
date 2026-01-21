@@ -14,6 +14,14 @@ import (
 	"go.uber.org/zap"
 )
 
+// apiPageMain handles the HTTP request to shorten the URL in the request body and return a URL with ID
+// Endpoint: POST /
+// Expected request body: plain text with the original URL
+// Returns:
+//   - 201 Created when ID was successfully created
+//   - 401 Unauthorized if user is not authorized
+//   - 409 Conflict when the URL in the request was already shortened
+//   - 500 Internal Server Error on failure
 func (su *ShortUrlsService) apiPageMain(res http.ResponseWriter, req *http.Request) {
 	// На любой некорректный запрос сервер должен возвращать ответ с кодом 400.
 	if req.Method != http.MethodPost {

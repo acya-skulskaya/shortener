@@ -12,6 +12,11 @@ import (
 	"go.uber.org/zap"
 )
 
+// apiPingDB handles the HTTP request to test connection to DB
+// Endpoint: GET /ping
+// Returns:
+//   - 200 OK if a connection was successful
+//   - 500 Internal Server Error on failure
 func (su *ShortUrlsService) apiPingDB(res http.ResponseWriter, req *http.Request) {
 	db, err := sql.Open("pgx", config.Values.DatabaseDSN)
 	if err != nil {
