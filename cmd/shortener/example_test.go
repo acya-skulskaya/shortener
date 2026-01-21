@@ -28,7 +28,7 @@ func Example_apiPageMain_Test() {
 
 	res, err := client.Do(request)
 	if err != nil {
-		fmt.Errorf("error executing request: %w", err)
+		fmt.Println(err.Error())
 	}
 	defer res.Body.Close()
 
@@ -55,7 +55,7 @@ func Example_apiDeleteUserURLs_Test() {
 
 	res, err := client.Do(request)
 	if err != nil {
-		fmt.Errorf("error executing request: %w", err)
+		fmt.Println(err.Error())
 	}
 	defer res.Body.Close()
 
@@ -80,7 +80,7 @@ func Example_apiPageByID_Test() {
 
 	res, err := client.Do(request)
 	if err != nil {
-		fmt.Errorf("error executing request: %w", err)
+		fmt.Println(err.Error())
 	}
 	defer res.Body.Close()
 
@@ -106,7 +106,7 @@ func Example_apiShorten_Test() {
 
 	res, err := client.Do(request)
 	if err != nil {
-		fmt.Errorf("error executing request: %w", err)
+		fmt.Println(err.Error())
 	}
 	defer res.Body.Close()
 
@@ -135,7 +135,7 @@ func Example_apiShortenBatch_Test() {
 
 	res, err := client.Do(request)
 	if err != nil {
-		fmt.Errorf("error executing request: %w", err)
+		fmt.Println(err.Error())
 	}
 	defer res.Body.Close()
 
@@ -170,7 +170,7 @@ func Example_apiUserURLs_Test() {
 
 	res, err := client.Do(request)
 	if err != nil {
-		fmt.Errorf("error executing request: %w", err)
+		fmt.Println(err.Error())
 	}
 	defer res.Body.Close()
 
