@@ -1,7 +1,9 @@
 package main
 
 import (
+	"log"
 	"net/http"
+	"os"
 
 	"github.com/acya-skulskaya/shortener/internal/config"
 	"github.com/acya-skulskaya/shortener/internal/logger"
@@ -34,7 +36,8 @@ func main() {
 	config.Init()
 
 	if err := logger.Init(config.Values.LogLevel); err != nil {
-		panic(err)
+		log.Fatalf("failed to run application: %v", err)
+		os.Exit(1)
 	}
 
 	auditPublisher := publisher.NewAuditPublisher()
@@ -53,7 +56,8 @@ func main() {
 	if len(config.Values.DatabaseDSN) != 0 {
 		db, err := shorturlindb.NewInDBShortURLRepository(config.Values.DatabaseDSN)
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed to init db storage: %v", err)
+			os.Exit(2)
 		}
 		defer db.Close()
 		shortURLService = NewShortUrlsService(&shorturlindb.InDBShortURLRepository{DB: db}, auditPublisher)
@@ -75,7 +79,8 @@ func main() {
 	)
 
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to init db storage: %v", err)
+		os.Exit(3)
 	}
 }
 
