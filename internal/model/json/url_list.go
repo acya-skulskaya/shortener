@@ -1,5 +1,6 @@
 package json
 
+// generate:reset
 type URLList struct {
 	ID          string `json:"id"`
 	ShortURL    string `json:"short_url"`
