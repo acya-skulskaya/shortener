@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -18,6 +19,12 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 // ShortUrlsService provides access to URL Shortener storage interface and audit publisher
 type ShortUrlsService struct {
 	Repo           interfaces.ShortURLRepository
@@ -33,6 +40,10 @@ func NewShortUrlsService(su interfaces.ShortURLRepository, ap publisher.Publishe
 }
 
 func main() {
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
+
 	config.Init()
 
 	if err := logger.Init(config.Values.LogLevel); err != nil {
