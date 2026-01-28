@@ -1,8 +1,9 @@
 package shorturlinmemory
 
 import (
-	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"sync"
+
+	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 )
 
 type InMemoryShortURLRepository struct {

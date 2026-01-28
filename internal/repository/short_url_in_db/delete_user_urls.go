@@ -3,11 +3,12 @@ package shorturlindb
 import (
 	"context"
 	"database/sql"
+	"sync"
+	"time"
+
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
 	"go.uber.org/zap"
-	"sync"
-	"time"
 )
 
 func (repo *InDBShortURLRepository) DeleteUserUrls(ctx context.Context, list []string, userID string) {

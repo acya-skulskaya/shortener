@@ -2,15 +2,16 @@ package main
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
+
 	"github.com/acya-skulskaya/shortener/internal/config"
 	"github.com/acya-skulskaya/shortener/internal/observer/audit/publisher"
 	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"testing"
 )
 
 func Test_apiPageByID(t *testing.T) {

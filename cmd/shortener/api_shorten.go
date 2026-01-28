@@ -3,14 +3,15 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+	"time"
+
 	"github.com/acya-skulskaya/shortener/internal/config"
 	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"github.com/acya-skulskaya/shortener/internal/middleware"
 	models "github.com/acya-skulskaya/shortener/internal/model/json"
 	"go.uber.org/zap"
-	"net/http"
-	"time"
 )
 
 type RequestData struct {

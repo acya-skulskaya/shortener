@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
+	"math/rand"
+
 	interfaces "github.com/acya-skulskaya/shortener/internal/repository/interface"
 	"github.com/google/uuid"
-	"math/rand"
 )
 
 func randRange(min, max int) int {

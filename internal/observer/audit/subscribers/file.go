@@ -2,11 +2,12 @@ package subscribers
 
 import (
 	"encoding/json"
+	"os"
+	"sync"
+
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	model "github.com/acya-skulskaya/shortener/internal/model/json"
 	"go.uber.org/zap"
-	"os"
-	"sync"
 )
 
 type FileAuditSubscriber struct {

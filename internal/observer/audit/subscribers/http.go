@@ -1,11 +1,12 @@
 package subscribers
 
 import (
+	"time"
+
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	model "github.com/acya-skulskaya/shortener/internal/model/json"
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
-	"time"
 )
 
 const eventChanSize = 20

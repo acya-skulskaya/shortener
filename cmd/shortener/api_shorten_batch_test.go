@@ -2,17 +2,18 @@ package main
 
 import (
 	"fmt"
-	"github.com/acya-skulskaya/shortener/internal/helpers"
-	"github.com/acya-skulskaya/shortener/internal/observer/audit/publisher"
-	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/acya-skulskaya/shortener/internal/helpers"
+	"github.com/acya-skulskaya/shortener/internal/observer/audit/publisher"
+	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_apiShortenBatch(t *testing.T) {
