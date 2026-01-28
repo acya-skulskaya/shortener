@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"github.com/acya-skulskaya/shortener/internal/middleware"
@@ -37,7 +38,12 @@ func (su *ShortUrlsService) apiDeleteUserURLs(res http.ResponseWriter, req *http
 	}
 	res.Header().Set("Content-Type", "application/json")
 
-	go su.Repo.DeleteUserUrls(context.Background(), list, userID)
+	go func() {
+		ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		su.Repo.DeleteUserUrls(ctxWithTimeout, list, userID)
+	}()
 
 	res.WriteHeader(http.StatusAccepted)
 }
