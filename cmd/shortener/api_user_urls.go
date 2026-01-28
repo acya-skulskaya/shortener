@@ -18,7 +18,7 @@ func (su *ShortUrlsService) apiUserURLs(res http.ResponseWriter, req *http.Reque
 	}
 	res.Header().Set("Content-Type", "application/json")
 
-	list, err := su.repo.GetUserUrls(req.Context(), userID)
+	list, err := su.Repo.GetUserUrls(req.Context(), userID)
 	if err != nil {
 		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return

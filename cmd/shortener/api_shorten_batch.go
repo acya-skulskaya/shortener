@@ -31,7 +31,7 @@ func (su *ShortUrlsService) apiShortenBatch(res http.ResponseWriter, req *http.R
 		return
 	}
 
-	listShortened, err := su.repo.StoreBatch(req.Context(), list, userID)
+	listShortened, err := su.Repo.StoreBatch(req.Context(), list, userID)
 	if err != nil && (errors.Is(err, errorsInternal.ErrConflictOriginalURL) || errors.Is(err, errorsInternal.ErrConflictID)) {
 		res.WriteHeader(http.StatusConflict)
 	} else {

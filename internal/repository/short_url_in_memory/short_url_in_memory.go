@@ -8,6 +8,8 @@ import (
 type InMemoryShortURLRepository struct {
 }
 
+const containerMapSize = 250000
+
 type Container struct {
 	mu        sync.RWMutex
 	shortUrls map[string]shortURL
@@ -79,4 +81,4 @@ func (c *Container) getByUserID(userID string) (list []shortURL) {
 	return list
 }
 
-var cont = Container{shortUrls: make(map[string]shortURL)}
+var cont = Container{shortUrls: make(map[string]shortURL, containerMapSize)}
