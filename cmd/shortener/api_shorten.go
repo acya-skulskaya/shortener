@@ -7,8 +7,10 @@ import (
 	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"github.com/acya-skulskaya/shortener/internal/middleware"
+	models "github.com/acya-skulskaya/shortener/internal/model/json"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 type RequestData struct {
@@ -57,6 +59,13 @@ func (su *ShortUrlsService) apiShorten(res http.ResponseWriter, req *http.Reques
 	}
 
 	resp := ResponseData{Result: config.Values.URLAddress + "/" + id}
+
+	su.auditPublisher.Notify(models.AuditEvent{
+		Timestamp:   time.Now().Unix(),
+		Action:      models.AuditEventActionTypeShorten,
+		UserID:      userID,
+		OriginalURL: url,
+	})
 
 	// сериализуем ответ сервера
 	enc := json.NewEncoder(res)
