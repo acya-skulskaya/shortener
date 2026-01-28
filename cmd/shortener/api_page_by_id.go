@@ -12,6 +12,14 @@ import (
 	"go.uber.org/zap"
 )
 
+// apiPageByID handles the HTTP request to follow the original URL from the ID
+// Endpoint: GET /{id}
+// Returns:
+//   - 307 Temporary Redirect when ID is found
+//   - 401 Unauthorized if user is not authorized
+//   - 404 Not Found when ID is not found
+//   - 410 Gone  when ID is deleted
+//   - 500 Internal Server Error on failure
 func (su *ShortUrlsService) apiPageByID(res http.ResponseWriter, req *http.Request) {
 	// На любой некорректный запрос сервер должен возвращать ответ с кодом 400.
 	if req.Method != http.MethodGet {
