@@ -45,5 +45,5 @@ func (su *ShortUrlsService) apiDeleteUserURLs(res http.ResponseWriter, req *http
 		su.Repo.DeleteUserUrls(ctxWithTimeout, list, userID)
 	}()
 
-	go res.WriteHeader(http.StatusAccepted)
+	res.WriteHeader(http.StatusAccepted)
 }
