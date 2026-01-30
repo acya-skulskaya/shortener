@@ -108,7 +108,7 @@ func main() {
 
 			err = saveResetMethodsFile(filename, rp)
 			if err != nil {
-				fmt.Errorf("could not save reset methods file %s: %w", filename, err)
+				fmt.Fprintf(os.Stderr, "could not save reset methods file %s: %v", filename, err)
 				continue
 			}
 
