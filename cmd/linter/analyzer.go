@@ -2,6 +2,7 @@ package main
 
 import (
 	"go/ast"
+	"go/types"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -42,32 +43,42 @@ func checkForPanic(pass *analysis.Pass, call *ast.CallExpr) {
 }
 
 func checkForLogFatal(pass *analysis.Pass, call *ast.CallExpr, file *ast.File) {
-	if checkPkgAndFuncName(call, "log", "Fatal") {
+	if checkPkgAndFuncName(pass, call, "log", "Fatal") {
 		if !checkIsMain(pass, call, file) {
 			pass.Reportf(call.Fun.Pos(), MsgUsingLogFatal)
 		}
 	}
 }
 func checkForOsExit(pass *analysis.Pass, call *ast.CallExpr, file *ast.File) {
-	if checkPkgAndFuncName(call, "os", "Exit") {
+	if checkPkgAndFuncName(pass, call, "os", "Exit") {
 		if !checkIsMain(pass, call, file) {
 			pass.Reportf(call.Fun.Pos(), MsgUsingOsExit)
 		}
 	}
 }
 
-func checkPkgAndFuncName(call *ast.CallExpr, pkgName string, funcName string) bool {
-	se, ok := call.Fun.(*ast.SelectorExpr)
+func checkPkgAndFuncName(pass *analysis.Pass, call *ast.CallExpr, checkPkgName string, checkFuncName string) bool {
+	sel, ok := call.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return false
 	}
 
-	i, ok := se.X.(*ast.Ident)
+	xIdent, ok := sel.X.(*ast.Ident)
 	if !ok {
 		return false
 	}
 
-	if i.Name == pkgName && se.Sel.Name == funcName {
+	obj := pass.TypesInfo.Uses[xIdent]
+
+	pkgName, ok := obj.(*types.PkgName)
+	if !ok {
+		return false
+	}
+
+	pkgPath := pkgName.Imported().Path()
+	funcName := sel.Sel.Name
+
+	if checkPkgName == pkgPath && checkFuncName == funcName {
 		return true
 	}
 

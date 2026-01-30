@@ -1,8 +1,22 @@
 .PHONY: build-shortener
 
+ifdef VERSION
+VERSION := $(VERSION)
+else
 VERSION := 0.0.1
+endif
+
+ifdef BUILD_DATE
+BUILD_DATE := $(BUILD_DATE)
+else
 BUILD_DATE := $(shell date +'%Y-%m-%d_%H:%M:%S')
+endif
+
+ifdef COMMIT_HASH
+COMMIT_HASH := $(COMMIT_HASH)
+else
 COMMIT_HASH := $(shell git rev-parse --short HEAD)
+endif
 
 build-shortener:
 	go build -o ./cmd/shortener/shortener -ldflags "\

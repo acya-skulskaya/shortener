@@ -27,5 +27,6 @@ func (p *ResettablePool[T]) Get() T {
 }
 
 func (p *ResettablePool[T]) Put(r T) {
+	r.Reset()
 	p.pool.Put(r)
 }

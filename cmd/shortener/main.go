@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -19,12 +18,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	buildVersion = "N/A"
-	buildDate    = "N/A"
-	buildCommit  = "N/A"
-)
-
 // ShortUrlsService provides access to URL Shortener storage interface and audit publisher
 type ShortUrlsService struct {
 	Repo           interfaces.ShortURLRepository
@@ -40,9 +33,7 @@ func NewShortUrlsService(su interfaces.ShortURLRepository, ap publisher.Publishe
 }
 
 func main() {
-	fmt.Printf("Build version: %s\n", buildVersion)
-	fmt.Printf("Build date: %s\n", buildDate)
-	fmt.Printf("Build commit: %s\n", buildCommit)
+	printBuildInfo()
 
 	config.Init()
 
@@ -67,8 +58,7 @@ func main() {
 	if len(config.Values.DatabaseDSN) != 0 {
 		db, err := shorturlindb.NewInDBShortURLRepository(config.Values.DatabaseDSN)
 		if err != nil {
-			log.Fatalf("failed to init db storage: %v", err)
-			os.Exit(2)
+			logger.Log.Fatal("failed to init db storage", zap.Error(err))
 		}
 		defer db.Close()
 		shortURLService = NewShortUrlsService(&shorturlindb.InDBShortURLRepository{DB: db}, auditPublisher)
