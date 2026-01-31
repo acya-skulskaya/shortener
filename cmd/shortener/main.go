@@ -33,6 +33,8 @@ func NewShortUrlsService(su interfaces.ShortURLRepository, ap publisher.Publishe
 }
 
 func main() {
+	printBuildInfo()
+
 	config.Init()
 
 	if err := logger.Init(config.Values.LogLevel); err != nil {
@@ -56,8 +58,7 @@ func main() {
 	if len(config.Values.DatabaseDSN) != 0 {
 		db, err := shorturlindb.NewInDBShortURLRepository(config.Values.DatabaseDSN)
 		if err != nil {
-			log.Fatalf("failed to init db storage: %v", err)
-			os.Exit(2)
+			logger.Log.Fatal("failed to init db storage", zap.Error(err))
 		}
 		defer db.Close()
 		shortURLService = NewShortUrlsService(&shorturlindb.InDBShortURLRepository{DB: db}, auditPublisher)
