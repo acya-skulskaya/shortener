@@ -29,7 +29,7 @@ func NewInDBShortURLRepository(databaseDSN string) (*sql.DB, error) {
 		logger.Log.Error("Failed to run migrations",
 			zap.Error(err),
 		)
-		panic(err)
+		return nil, err
 	}
 
 	return db, nil
