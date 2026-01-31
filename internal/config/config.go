@@ -5,6 +5,7 @@ import (
 	"os"
 )
 
+// generate:reset
 type Config struct {
 	ServerAddress   string
 	URLAddress      string

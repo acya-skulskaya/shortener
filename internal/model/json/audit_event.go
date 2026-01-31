@@ -7,6 +7,7 @@ const (
 	AuditEventActionTypeFollow  AuditEventActionType = "follow"
 )
 
+// generate:reset
 type AuditEvent struct {
 	Timestamp   int64                `json:"ts"`                // unix timestamp события
 	Action      AuditEventActionType `json:"action"`            // действие: shorten (создание) или follow (прохождение по ссылке)

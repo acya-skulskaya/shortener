@@ -11,11 +11,13 @@ type InMemoryShortURLRepository struct {
 
 const containerMapSize = 250000
 
+// generate:reset
 type Container struct {
 	mu        sync.RWMutex
 	shortUrls map[string]shortURL
 }
 
+// generate:reset
 type shortURL struct {
 	shortURL    string
 	originalURL string
