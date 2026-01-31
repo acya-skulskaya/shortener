@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/acya-skulskaya/shortener/internal/config"
 	"github.com/acya-skulskaya/shortener/internal/logger"
@@ -16,6 +15,7 @@ import (
 	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 // ShortUrlsService provides access to URL Shortener storage interface and audit publisher
@@ -35,11 +35,12 @@ func NewShortUrlsService(su interfaces.ShortURLRepository, ap publisher.Publishe
 func main() {
 	printBuildInfo()
 
-	config.Init()
+	if err := config.Init(); err != nil {
+		log.Fatalf("could not init configuration: %v", err)
+	}
 
 	if err := logger.Init(config.Values.LogLevel); err != nil {
-		log.Fatalf("failed to run application: %v", err)
-		os.Exit(1)
+		log.Fatalf("failed init logger: %v", err)
 	}
 
 	auditPublisher := publisher.NewAuditPublisher()
@@ -71,17 +72,48 @@ func main() {
 	}
 
 	router := NewRouter(shortURLService)
-	err := http.ListenAndServe(config.Values.ServerAddress, router)
 
-	logger.Log.Info("server started",
-		zap.String("ServerAddress", config.Values.ServerAddress),
-		zap.String("URLAddress", config.Values.URLAddress),
-		zap.String("LogLevel", config.Values.LogLevel),
-	)
+	httpServer := &http.Server{
+		Addr:    config.Values.ServerAddress,
+		Handler: router,
+	}
+	if config.Values.EnableHTTPS {
+		if config.Values.AutoCert {
+			// конструируем менеджер TLS-сертификатов
+			manager := &autocert.Manager{
+				// директория для хранения сертификатов
+				Cache: autocert.DirCache("shortener-cert-cache-dir"),
+				// функция, принимающая Terms of Service издателя сертификатов
+				Prompt: autocert.AcceptTOS,
+			}
 
-	if err != nil {
-		log.Fatalf("failed to init db storage: %v", err)
-		os.Exit(3)
+			httpServer.TLSConfig = manager.TLSConfig()
+		}
+
+		logger.Log.Info("starting tls server",
+			zap.String("ServerAddress", config.Values.ServerAddress),
+			zap.String("URLAddress", config.Values.URLAddress),
+			zap.String("LogLevel", config.Values.LogLevel),
+			zap.Bool("AutoCert", config.Values.AutoCert),
+		)
+
+		err := httpServer.ListenAndServeTLS(config.Values.TLSCerfFile, config.Values.TLSKeyFile)
+
+		if err != nil {
+			log.Fatalf("failed listen and serve: %v", err)
+		}
+	} else {
+		logger.Log.Info("starting server",
+			zap.String("ServerAddress", config.Values.ServerAddress),
+			zap.String("URLAddress", config.Values.URLAddress),
+			zap.String("LogLevel", config.Values.LogLevel),
+		)
+
+		err := httpServer.ListenAndServe()
+
+		if err != nil {
+			log.Fatalf("failed listen and serve: %v", err)
+		}
 	}
 }
 
