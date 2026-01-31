@@ -1,5 +1,6 @@
 package json
 
+// generate:reset
 type BatchURLList struct {
 	CorrelationID string `json:"correlation_id,omitempty"`
 	ShortURL      string `json:"short_url,omitempty"`
