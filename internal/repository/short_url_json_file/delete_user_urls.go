@@ -12,15 +12,7 @@ func (repo *JSONFileShortURLRepository) DeleteUserUrls(ctx context.Context, list
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 
-	reader, err := NewFileReader(repo.FileStoragePath)
-	if err != nil {
-		logger.Log.Debug("could not create reader",
-			zap.Error(err),
-			zap.String("file", repo.FileStoragePath),
-		)
-		return
-	}
-	defer reader.Close()
+	reader := NewFileReader(repo.FileStoragePath)
 	existingRows, err := reader.ReadFile()
 	if err != nil {
 		logger.Log.Debug("could not read file",
@@ -30,13 +22,7 @@ func (repo *JSONFileShortURLRepository) DeleteUserUrls(ctx context.Context, list
 		return
 	}
 
-	writer, err := NewFileWriter(repo.FileStoragePath)
-	if err != nil {
-		logger.Log.Debug("could not create file writer",
-			zap.Error(err),
-		)
-		return
-	}
+	writer := NewFileWriter(repo.FileStoragePath)
 
 	doOverwrite := false
 	for i, existingRow := range existingRows {
@@ -45,11 +31,11 @@ func (repo *JSONFileShortURLRepository) DeleteUserUrls(ctx context.Context, list
 		}
 
 		if existingRow.UserID != userID {
-			logger.Log.Debug("id belongs to anther user", zap.String("id", existingRow.ID), zap.String("userID", userID))
+			logger.Log.Debug("id belongs to another user", zap.String("id", existingRow.ID), zap.String("userID", userID))
 			continue
 		}
 		if existingRow.IsDeleted == 1 {
-			logger.Log.Debug("id os already deleted", zap.String("id", existingRow.ID), zap.String("userID", userID))
+			logger.Log.Debug("id is already deleted", zap.String("id", existingRow.ID), zap.String("userID", userID))
 			continue
 		}
 

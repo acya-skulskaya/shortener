@@ -13,16 +13,15 @@ func (repo *JSONFileShortURLRepository) GetUserUrls(ctx context.Context, userID 
 	repo.mu.RLock()
 	defer repo.mu.RUnlock()
 
-	reader, err := NewFileReader(repo.FileStoragePath)
+	reader := NewFileReader(repo.FileStoragePath)
+	rows, err := reader.ReadFile()
 	if err != nil {
-		logger.Log.Debug("could not create reader",
+		logger.Log.Debug("could not read file",
 			zap.Error(err),
 			zap.String("file", repo.FileStoragePath),
 		)
-		return nil, err
+		return []jsonModel.BatchURLList{}, err
 	}
-	defer reader.Close()
-	rows, err := reader.ReadFile()
 
 	for _, row := range rows {
 		if row.UserID == userID {
