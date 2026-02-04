@@ -97,10 +97,10 @@ func Init() error {
 		if cfg.AuditURL == defaultValueAuditURL && jsonConfigValues.AuditURL != "" {
 			cfg.AuditURL = jsonConfigValues.AuditURL
 		}
-		if cfg.EnableHTTPS == defaultValueEnableHTTPS && jsonConfigValues.EnableHTTPS != false {
+		if !cfg.EnableHTTPS && jsonConfigValues.EnableHTTPS {
 			cfg.EnableHTTPS = jsonConfigValues.EnableHTTPS
 		}
-		if cfg.AutoCert == defaultValueAutoCert && jsonConfigValues.AutoCert != false {
+		if !cfg.AutoCert && jsonConfigValues.AutoCert {
 			cfg.AutoCert = jsonConfigValues.AutoCert
 		}
 		if cfg.TLSCerfFile == defaultValueTLSCerfFile && jsonConfigValues.TLSCerfFile != "" {
