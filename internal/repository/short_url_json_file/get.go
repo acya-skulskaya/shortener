@@ -12,16 +12,7 @@ func (repo *JSONFileShortURLRepository) Get(ctx context.Context, id string) (ori
 	repo.mu.RLock()
 	defer repo.mu.RUnlock()
 
-	reader, err := NewFileReader(repo.FileStoragePath)
-	if err != nil {
-		logger.Log.Debug("could not create reader",
-			zap.Error(err),
-			zap.String("id", id),
-			zap.String("file", repo.FileStoragePath),
-		)
-		return "", err
-	}
-	defer reader.Close()
+	reader := NewFileReader(repo.FileStoragePath)
 
 	list, err := reader.ReadFile()
 	if err != nil {

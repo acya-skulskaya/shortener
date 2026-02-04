@@ -1,43 +1,29 @@
 package shorturljsonfile
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
-	"os"
 
+	"github.com/acya-skulskaya/shortener/internal/helpers"
 	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
 )
 
 type FileWriter struct {
-	file *os.File
-	// добавляем Writer в FileWriter
-	writer *bufio.Writer
+	filename string
 }
 
-func NewFileWriter(filename string) (*FileWriter, error) {
-	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		return nil, fmt.Errorf("error opening file %s: %w", filename, err)
-	}
-
+func NewFileWriter(filename string) *FileWriter {
 	return &FileWriter{
-		file: file,
-		// создаём новый Writer
-		writer: bufio.NewWriter(file),
-	}, nil
+		filename: filename,
+	}
 }
 
 func (p *FileWriter) WriteFile(row jsonModel.URLList) error {
-	fileReader, err := NewFileReader(p.file.Name())
-	if err != nil {
-		return err
-	}
-	defer fileReader.Close()
+	fileReader := NewFileReader(p.filename)
 
 	list, err := fileReader.ReadFile()
 	if err != nil {
-		return err
+		return fmt.Errorf("could not read file: %w", err)
 	}
 	list = append(list, row)
 
@@ -46,25 +32,19 @@ func (p *FileWriter) WriteFile(row jsonModel.URLList) error {
 		return fmt.Errorf("could not encode json: %w", err)
 	}
 
-	// записываем событие в буфер
-	if _, err := p.writer.Write(data); err != nil {
-		return err
+	if err = helpers.Write(p.filename, data); err != nil {
+		return fmt.Errorf("could not write file: %w", err)
 	}
 
-	// записываем буфер в файл
-	return p.writer.Flush()
+	return nil
 }
 
 func (p *FileWriter) WriteFileRows(rows []jsonModel.URLList) error {
-	fileReader, err := NewFileReader(p.file.Name())
-	if err != nil {
-		return err
-	}
-	defer fileReader.Close()
+	fileReader := NewFileReader(p.filename)
 
 	list, err := fileReader.ReadFile()
 	if err != nil {
-		return err
+		return fmt.Errorf("could not read file: %w", err)
 	}
 
 	list = append(list, rows...)
@@ -74,13 +54,11 @@ func (p *FileWriter) WriteFileRows(rows []jsonModel.URLList) error {
 		return fmt.Errorf("could not encode json: %w", err)
 	}
 
-	// записываем событие в буфер
-	if _, err := p.writer.Write(data); err != nil {
-		return err
+	if err = helpers.Write(p.filename, data); err != nil {
+		return fmt.Errorf("could not write file rows: %w", err)
 	}
 
-	// записываем буфер в файл
-	return p.writer.Flush()
+	return nil
 }
 
 func (p *FileWriter) OverwriteFile(rows []jsonModel.URLList) error {
@@ -89,11 +67,9 @@ func (p *FileWriter) OverwriteFile(rows []jsonModel.URLList) error {
 		return fmt.Errorf("could not encode json: %w", err)
 	}
 
-	// записываем событие в буфер
-	if _, err := p.writer.Write(data); err != nil {
-		return err
+	if err = helpers.Write(p.filename, data); err != nil {
+		return fmt.Errorf("could not overwrite file: %w", err)
 	}
 
-	// записываем буфер в файл
-	return p.writer.Flush()
+	return helpers.Write(p.filename, data)
 }
