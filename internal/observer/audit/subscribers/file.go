@@ -24,8 +24,6 @@ type FileAuditSubscriber struct {
 }
 
 func NewFileAuditSubscriber(ctx context.Context, filePath string) (*FileAuditSubscriber, error) {
-	ctx, cancel := context.WithCancel(ctx)
-
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		logger.Log.Error("could not open file", zap.Error(err))
@@ -33,6 +31,7 @@ func NewFileAuditSubscriber(ctx context.Context, filePath string) (*FileAuditSub
 	}
 	encoder := json.NewEncoder(file)
 
+	ctx, cancel := context.WithCancel(ctx)
 	subscriber := &FileAuditSubscriber{
 		file:      file,
 		encoder:   encoder,
