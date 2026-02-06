@@ -9,11 +9,18 @@ type Publisher interface {
 	Subscribe(subscriber subscribers.Subscriber)
 	Unsubscribe(subscriber subscribers.Subscriber)
 	Notify(event json.AuditEvent)
+	Shutdown()
 }
 
 type AuditPublisher struct {
 	Subscribers map[string]subscribers.Subscriber
 	eventChan   chan json.AuditEvent
+}
+
+func (e *AuditPublisher) Shutdown() {
+	for _, subscriber := range e.Subscribers {
+		subscriber.Stop()
+	}
 }
 
 func NewAuditPublisher() *AuditPublisher {

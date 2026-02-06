@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/acya-skulskaya/shortener/internal/config"
 	"github.com/acya-skulskaya/shortener/internal/logger"
@@ -16,6 +21,12 @@ import (
 	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/acme/autocert"
+)
+
+const (
+	_shutdownPeriod     = 20 * time.Second
+	_shutdownHardPeriod = 10 * time.Second
 )
 
 // ShortUrlsService provides access to URL Shortener storage interface and audit publisher
@@ -35,26 +46,35 @@ func NewShortUrlsService(su interfaces.ShortURLRepository, ap publisher.Publishe
 func main() {
 	printBuildInfo()
 
-	config.Init()
+	if err := config.Init(); err != nil {
+		log.Fatalf("could not init configuration: %v", err)
+	}
 
 	if err := logger.Init(config.Values.LogLevel); err != nil {
-		log.Fatalf("failed to run application: %v", err)
-		os.Exit(1)
+		log.Fatalf("failed init logger: %v", err)
 	}
+
+	// Setup signal context
+	rootCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stop()
 
 	auditPublisher := publisher.NewAuditPublisher()
 	if config.Values.AuditFile != "" || config.Values.AuditURL != "" {
 		if config.Values.AuditFile != "" {
-			fileAuditSubscriber := subscribers.NewFileAuditSubscriber(config.Values.AuditFile)
-			auditPublisher.Subscribe(fileAuditSubscriber)
+			fileAuditSubscriber, err := subscribers.NewFileAuditSubscriber(rootCtx, config.Values.AuditFile)
+			if err != nil {
+				logger.Log.Fatal("could not create file audit subscriber", zap.Error(err))
+			} else {
+				auditPublisher.Subscribe(fileAuditSubscriber)
+			}
 		}
 		if config.Values.AuditURL != "" {
-			httpAuditSubscriber := subscribers.NewHTTPAuditSubscriber(config.Values.AuditURL)
+			httpAuditSubscriber := subscribers.NewHTTPAuditSubscriber(rootCtx, config.Values.AuditURL)
 			auditPublisher.Subscribe(httpAuditSubscriber)
 		}
 	}
 
-	shortURLService := NewShortUrlsService(&shorturlinmemory.InMemoryShortURLRepository{}, auditPublisher)
+	var shortURLService *ShortUrlsService
 	if len(config.Values.DatabaseDSN) != 0 {
 		db, err := shorturlindb.NewInDBShortURLRepository(config.Values.DatabaseDSN)
 		if err != nil {
@@ -67,22 +87,75 @@ func main() {
 		shortURLService = NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: config.Values.FileStoragePath}, auditPublisher)
 		logger.Log.Info("using file storage", zap.String("FileStoragePath", config.Values.FileStoragePath))
 	} else {
+		shortURLService = NewShortUrlsService(&shorturlinmemory.InMemoryShortURLRepository{}, auditPublisher)
 		logger.Log.Info("using in memory storage")
 	}
 
 	router := NewRouter(shortURLService)
-	err := http.ListenAndServe(config.Values.ServerAddress, router)
 
-	logger.Log.Info("server started",
-		zap.String("ServerAddress", config.Values.ServerAddress),
-		zap.String("URLAddress", config.Values.URLAddress),
-		zap.String("LogLevel", config.Values.LogLevel),
-	)
+	// Ensure in-flight requests aren't cancelled immediately on SIGTERM
+	ongoingCtx, stopOngoingGracefully := context.WithCancel(context.Background())
 
-	if err != nil {
-		log.Fatalf("failed to init db storage: %v", err)
-		os.Exit(3)
+	httpServer := &http.Server{
+		Addr:    config.Values.ServerAddress,
+		Handler: router,
+		BaseContext: func(_ net.Listener) context.Context {
+			return ongoingCtx
+		},
 	}
+	if config.Values.EnableHTTPS {
+		if config.Values.AutoCert {
+			// конструируем менеджер TLS-сертификатов
+			manager := &autocert.Manager{
+				// директория для хранения сертификатов
+				Cache: autocert.DirCache("shortener-cert-cache-dir"),
+				// функция, принимающая Terms of Service издателя сертификатов
+				Prompt: autocert.AcceptTOS,
+			}
+
+			httpServer.TLSConfig = manager.TLSConfig()
+		}
+
+		go func() {
+			logger.Log.Info("starting tls server",
+				zap.String("ServerAddress", config.Values.ServerAddress),
+				zap.String("URLAddress", config.Values.URLAddress),
+				zap.String("LogLevel", config.Values.LogLevel),
+				zap.Bool("AutoCert", config.Values.AutoCert),
+			)
+			if err := httpServer.ListenAndServeTLS(config.Values.TLSCerfFile, config.Values.TLSKeyFile); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("failed listen and serve: %v", err)
+			}
+		}()
+	} else {
+		go func() {
+			logger.Log.Info("starting server",
+				zap.String("ServerAddress", config.Values.ServerAddress),
+				zap.String("URLAddress", config.Values.URLAddress),
+				zap.String("LogLevel", config.Values.LogLevel),
+			)
+			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("failed listen and serve: %v", err)
+			}
+		}()
+	}
+
+	// Wait for signal
+	<-rootCtx.Done()
+	stop()
+	logger.Log.Info("received shutdown signal, shutting down")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), _shutdownPeriod)
+	defer cancel()
+	err := httpServer.Shutdown(shutdownCtx)
+	stopOngoingGracefully()
+	auditPublisher.Shutdown()
+	if err != nil {
+		logger.Log.Warn("failed to wait for ongoing requests to finish, waiting for forced cancellation")
+		time.Sleep(_shutdownHardPeriod)
+	}
+
+	logger.Log.Info("failed to wait for ongoing requests to finish, waiting for forced cancellation")
 }
 
 // NewRouter initiates a new router with API's endpoints:

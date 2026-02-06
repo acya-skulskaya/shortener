@@ -16,24 +16,17 @@ func (repo *JSONFileShortURLRepository) StoreBatch(ctx context.Context, listOrig
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 
-	writer, err := NewFileWriter(repo.FileStoragePath)
-	if err != nil {
-		logger.Log.Debug("could not create file writer",
-			zap.Error(err),
-		)
-		return nil, err
-	}
+	writer := NewFileWriter(repo.FileStoragePath)
 
-	reader, err := NewFileReader(repo.FileStoragePath)
+	reader := NewFileReader(repo.FileStoragePath)
+	existingRows, err := reader.ReadFile()
 	if err != nil {
-		logger.Log.Debug("could not create reader",
+		logger.Log.Debug("could not read file",
 			zap.Error(err),
 			zap.String("file", repo.FileStoragePath),
 		)
 		return nil, err
 	}
-	defer reader.Close()
-	existingRows, err := reader.ReadFile()
 
 	var rows []jsonModel.URLList
 

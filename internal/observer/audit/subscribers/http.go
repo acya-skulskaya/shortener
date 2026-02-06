@@ -1,6 +1,8 @@
 package subscribers
 
 import (
+	"context"
+	"sync"
 	"time"
 
 	"github.com/acya-skulskaya/shortener/internal/logger"
@@ -9,33 +11,47 @@ import (
 	"go.uber.org/zap"
 )
 
-const eventChanSize = 20
-
 type HTTPAuditSubscriber struct {
 	URL       string
 	name      string
 	eventChan chan model.AuditEvent
 	client    *resty.Client
+	ctx       context.Context
+	cancel    context.CancelFunc
+	wg        sync.WaitGroup
+	mu        sync.Mutex
+	closed    bool
 }
 
-func NewHTTPAuditSubscriber(url string) *HTTPAuditSubscriber {
-	client := resty.New().SetTimeout(3*time.Second).SetHeader("Content-Type", "application/json")
+func NewHTTPAuditSubscriber(ctx context.Context, url string) *HTTPAuditSubscriber {
+	ctx, cancel := context.WithCancel(ctx)
+	client := resty.
+		New().
+		SetTimeout(3*time.Second).
+		SetHeader("Content-Type", "application/json")
 
 	subscriber := &HTTPAuditSubscriber{
 		URL:       url,
 		name:      "HTTPAuditSubscriber",
 		eventChan: make(chan model.AuditEvent, eventChanSize),
 		client:    client,
+		ctx:       ctx,
+		cancel:    cancel,
 	}
 
+	subscriber.wg.Add(1)
 	go subscriber.worker()
 
 	return subscriber
 }
 
 func (s *HTTPAuditSubscriber) ReceiveNewEvent(event model.AuditEvent) {
-	logger.Log.Info("http subscriber received new event", zap.Any("event", event))
-	s.eventChan <- event
+	select {
+	case s.eventChan <- event:
+		logger.Log.Debug("HTTPAuditSubscriber::ReceiveNewEvent new event was sent to file channel", zap.Any("event", event))
+	case <-s.ctx.Done():
+		logger.Log.Debug("HTTPAuditSubscriber::ReceiveNewEvent ctx.Done()")
+	}
 }
 
 func (s *HTTPAuditSubscriber) GetName() string {
@@ -43,15 +59,44 @@ func (s *HTTPAuditSubscriber) GetName() string {
 }
 
 func (s *HTTPAuditSubscriber) worker() {
-	for event := range s.eventChan {
-		func(event model.AuditEvent) {
-			resp, err := s.client.R().SetBody(event).Post(s.URL)
-			if err != nil {
-				logger.Log.Error("could not post audit event", zap.Any("event", event), zap.Error(err))
+	logger.Log.Debug("FileAuditSubscriber::worker")
+	defer s.wg.Done()
+
+	for {
+		select {
+		case event, ok := <-s.eventChan:
+			if !ok {
+				logger.Log.Debug("HTTPAuditSubscriber::worker eventChan was closed")
+				return
 			}
-			if resp.StatusCode() >= 400 {
-				logger.Log.Debug("received error status trying to post audit event", zap.Any("event", event), zap.Any("Status", resp.Status()))
+			go func(event model.AuditEvent) {
+				resp, err := s.client.R().SetBody(event).Post(s.URL)
+				if err != nil {
+					logger.Log.Error("HTTPAuditSubscriber::worker could not post audit event", zap.Any("event", event), zap.Error(err))
+					return
+				}
+				if resp.StatusCode() >= 400 {
+					logger.Log.Warn("HTTPAuditSubscriber::worker received error status trying to post audit event", zap.Any("event", event), zap.Any("Status", resp.Status()))
+					return
+				}
+				logger.Log.Debug("HTTPAuditSubscriber::worker audit event was sent", zap.Any("event", event))
+			}(event)
+
+		case <-s.ctx.Done():
+			logger.Log.Debug("HTTPAuditSubscriber::worker ctx.Done()")
+			s.mu.Lock()
+			if !s.closed {
+				close(s.eventChan)
+				s.closed = true
 			}
-		}(event)
+			s.mu.Unlock()
+			return
+		}
 	}
+}
+
+func (s *HTTPAuditSubscriber) Stop() {
+	logger.Log.Debug("HTTPAuditSubscriber::stop")
+	s.cancel()
+	s.wg.Wait()
 }
