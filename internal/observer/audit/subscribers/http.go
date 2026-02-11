@@ -45,6 +45,11 @@ func NewHTTPAuditSubscriber(ctx context.Context, url string) *HTTPAuditSubscribe
 }
 
 func (s *HTTPAuditSubscriber) ReceiveNewEvent(event model.AuditEvent) {
+	if s.closed {
+		logger.Log.Debug("HTTPAuditSubscriber::ReceiveNewEvent can not receive new event because channel is closed", zap.Any("event", event))
+		return
+	}
+
 	select {
 	case s.eventChan <- event:
 		logger.Log.Debug("HTTPAuditSubscriber::ReceiveNewEvent new event was sent to file channel", zap.Any("event", event))
