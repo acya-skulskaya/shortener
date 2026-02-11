@@ -1,177 +1,77 @@
 package config
 
 import (
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
-	"strings"
-)
 
-const (
-	defaultValueServerAddress   = ":8080"
-	defaultValueURLAddress      = "http://localhost:8080"
-	defaultValueLogLevel        = "debug"
-	defaultValueFileStoragePath = ""
-	defaultValueDatabaseDSN     = ""
-	defaultValueAuditFile       = ""
-	defaultValueAuditURL        = ""
-	defaultValueEnableHTTPS     = false
-	defaultValueAutoCert        = false
-	defaultValueTLSCerfFile     = "./resources/ssl/cert.pem"
-	defaultValueTLSKeyFile      = "./resources/ssl/key.pem"
-	defaultValueJSONConfigFile  = ""
+	"dario.cat/mergo"
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
 type Config struct {
-	ServerAddress   string `json:"server_address,omitempty"`
-	URLAddress      string `json:"base_url,omitempty"`
-	LogLevel        string `json:"log_level,omitempty"`
-	FileStoragePath string `json:"file_storage_path,omitempty"`
-	DatabaseDSN     string `json:"database_dsn,omitempty"`
-	AuditFile       string `json:"audit_file,omitempty"`
-	AuditURL        string `json:"audit_url,omitempty"`
-	EnableHTTPS     bool   `json:"enable_https,omitempty"`
-	AutoCert        bool   `json:"auto_cert,omitempty"`
-	TLSCerfFile     string `json:"tls_cerf_file,omitempty"`
-	TLSKeyFile      string `json:"tls_key_file,omitempty"`
+	ServerAddress   string `json:"server_address,omitempty" env:"SERVER_ADDRESS" env-default:":8080"`
+	URLAddress      string `json:"base_url,omitempty" env:"BASE_URL" env-default:"http://localhost:8080"`
+	LogLevel        string `json:"log_level,omitempty" env:"LOG_LEVEL" env-default:"debug"`
+	FileStoragePath string `json:"file_storage_path,omitempty" env:"FILE_STORAGE_PATH" env-default:""`
+	DatabaseDSN     string `json:"database_dsn,omitempty" env:"DATABASE_DSN" env-default:""`
+	AuditFile       string `json:"audit_file,omitempty" env:"AUDIT_FILE" env-default:""`
+	AuditURL        string `json:"audit_url,omitempty" env:"AUDIT_URL" env-default:"false"`
+	EnableHTTPS     bool   `json:"enable_https,omitempty" env:"ENABLE_HTTPS" env-default:"false"`
+	AutoCert        bool   `json:"auto_cert,omitempty" env:"AUTO_CERT" env-default:"false"`
+	TLSCerfFile     string `json:"tls_cerf_file,omitempty" env:"TLS_CERT_FILE" env-default:"./resources/ssl/cert.pem"`
+	TLSKeyFile      string `json:"tls_key_file,omitempty" env:"TLS_KEY_FILE" env-default:"./resources/ssl/key.pem"`
 	jsonConfigFile  string
 }
 
 var Values Config
 
 func Init() error {
-	cfg := Config{}
-	flag.StringVar(&cfg.ServerAddress, "a", defaultValueServerAddress, "address of HTTP server to start")
-	flag.StringVar(&cfg.URLAddress, "b", defaultValueURLAddress, "server address in shortened URLs")
-	flag.StringVar(&cfg.LogLevel, "l", defaultValueLogLevel, "log level")
-	flag.StringVar(&cfg.FileStoragePath, "f", defaultValueFileStoragePath, "path to file with short urls")
-	flag.StringVar(&cfg.DatabaseDSN, "d", defaultValueDatabaseDSN, "connection settings for pgsql") // postgres://user:pass@localhost:5432/test-db?sslmode=disable
-	flag.StringVar(&cfg.AuditFile, "audit-file", defaultValueAuditFile, "path to audit file")
-	flag.StringVar(&cfg.AuditURL, "audit-url", defaultValueAuditURL, "url to submit audit data")
-	flag.BoolVar(&cfg.EnableHTTPS, "s", defaultValueEnableHTTPS, "enable https")
-	flag.BoolVar(&cfg.AutoCert, "auto-cert", defaultValueAutoCert, "generate TLS certificate automatically (this option overrides -cert-file and -key-file options)")
-	flag.StringVar(&cfg.TLSCerfFile, "cert-file", defaultValueTLSCerfFile, "path to TLS certificate")
-	flag.StringVar(&cfg.TLSKeyFile, "key-file", defaultValueTLSKeyFile, "path to TLS key")
+	cfgFlag := Config{}
+	flag.StringVar(&cfgFlag.ServerAddress, "a", "", "address of HTTP server to start")
+	flag.StringVar(&cfgFlag.URLAddress, "b", "", "server address in shortened URLs")
+	flag.StringVar(&cfgFlag.LogLevel, "l", "", "log level")
+	flag.StringVar(&cfgFlag.FileStoragePath, "f", "", "path to file with short urls")
+	flag.StringVar(&cfgFlag.DatabaseDSN, "d", "", "connection settings for pgsql") // postgres://user:pass@localhost:5432/test-db?sslmode=disable
+	flag.StringVar(&cfgFlag.AuditFile, "audit-file", "", "path to audit file")
+	flag.StringVar(&cfgFlag.AuditURL, "audit-url", "", "url to submit audit data")
+	flag.BoolVar(&cfgFlag.EnableHTTPS, "s", false, "enable https")
+	flag.BoolVar(&cfgFlag.AutoCert, "auto-cert", false, "generate TLS certificate automatically (this option overrides -cert-file and -key-file options)")
+	flag.StringVar(&cfgFlag.TLSCerfFile, "cert-file", "", "path to TLS certificate")
+	flag.StringVar(&cfgFlag.TLSKeyFile, "key-file", "", "path to TLS key")
 
-	flag.StringVar(&cfg.jsonConfigFile, "config", defaultValueJSONConfigFile, "path to JSON config file")
-	flag.StringVar(&cfg.jsonConfigFile, "c", defaultValueJSONConfigFile, "path to JSON config file (shorthand)")
+	flag.StringVar(&cfgFlag.jsonConfigFile, "config", "", "path to JSON config file")
+	flag.StringVar(&cfgFlag.jsonConfigFile, "c", "", "path to JSON config file (shorthand)")
 
 	flag.Parse()
 
-	jsonConfigFile, ok := os.LookupEnv("CONFIG")
+	jsonConfigFileEnv, ok := os.LookupEnv("CONFIG")
 	if ok {
-		cfg.jsonConfigFile = jsonConfigFile
+		cfgFlag.jsonConfigFile = jsonConfigFileEnv
 	}
 
-	if cfg.jsonConfigFile != defaultValueJSONConfigFile {
-		jsonConfigData, err := os.ReadFile(cfg.jsonConfigFile)
+	var cfg Config
+	if cfgFlag.jsonConfigFile != "" {
+		err := cleanenv.ReadConfig(cfgFlag.jsonConfigFile, &cfg)
 		if err != nil {
-			return fmt.Errorf("could not scan JSON config file %s: %w", cfg.jsonConfigFile, err)
+			return fmt.Errorf("could not scan JSON config file or env variables %s: %w", cfgFlag.jsonConfigFile, err)
 		}
-		var jsonConfigValues Config
-		err = json.Unmarshal(jsonConfigData, &jsonConfigValues)
+	} else {
+		err := cleanenv.ReadEnv(&cfg)
 		if err != nil {
-			return fmt.Errorf("could not unmarshall JSON config file %s: %w", cfg.jsonConfigFile, err)
-		}
-
-		if cfg.ServerAddress == defaultValueServerAddress && jsonConfigValues.ServerAddress != "" {
-			cfg.ServerAddress = jsonConfigValues.ServerAddress
-		}
-		if cfg.URLAddress == defaultValueURLAddress && jsonConfigValues.URLAddress != "" {
-			cfg.URLAddress = jsonConfigValues.URLAddress
-		}
-		if cfg.LogLevel == defaultValueLogLevel && jsonConfigValues.LogLevel != "" {
-			cfg.LogLevel = jsonConfigValues.LogLevel
-		}
-		if cfg.FileStoragePath == defaultValueFileStoragePath && jsonConfigValues.FileStoragePath != "" {
-			cfg.FileStoragePath = jsonConfigValues.FileStoragePath
-		}
-		if cfg.DatabaseDSN == defaultValueDatabaseDSN && jsonConfigValues.DatabaseDSN != "" {
-			cfg.DatabaseDSN = jsonConfigValues.DatabaseDSN
-		}
-		if cfg.AuditFile == defaultValueAuditFile && jsonConfigValues.AuditFile != "" {
-			cfg.AuditFile = jsonConfigValues.AuditFile
-		}
-		if cfg.AuditURL == defaultValueAuditURL && jsonConfigValues.AuditURL != "" {
-			cfg.AuditURL = jsonConfigValues.AuditURL
-		}
-		if !cfg.EnableHTTPS && jsonConfigValues.EnableHTTPS {
-			cfg.EnableHTTPS = jsonConfigValues.EnableHTTPS
-		}
-		if !cfg.AutoCert && jsonConfigValues.AutoCert {
-			cfg.AutoCert = jsonConfigValues.AutoCert
-		}
-		if cfg.TLSCerfFile == defaultValueTLSCerfFile && jsonConfigValues.TLSCerfFile != "" {
-			cfg.TLSCerfFile = jsonConfigValues.TLSCerfFile
-		}
-		if cfg.TLSKeyFile == defaultValueTLSKeyFile && jsonConfigValues.TLSKeyFile != "" {
-			cfg.TLSKeyFile = jsonConfigValues.TLSKeyFile
+			return fmt.Errorf("could not scan env variables: %w", err)
 		}
 	}
 
-	serverAddress, ok := os.LookupEnv("SERVER_ADDRESS")
-	if ok {
-		cfg.ServerAddress = serverAddress
+	err := mergo.Merge(&cfg, cfgFlag, mergo.WithOverride)
+	if err != nil {
+		return fmt.Errorf("could not merge config sources: %w", err)
 	}
 
-	baseURL, ok := os.LookupEnv("BASE_URL")
-	if ok {
-		cfg.URLAddress = baseURL
-	}
-
-	logLevel, ok := os.LookupEnv("LOG_LEVEL")
-	if ok {
-		cfg.LogLevel = logLevel
-	}
-
-	fileStoragePath, ok := os.LookupEnv("FILE_STORAGE_PATH")
-	if ok {
-		cfg.FileStoragePath = fileStoragePath
-	}
-
-	databaseDSN, ok := os.LookupEnv("DATABASE_DSN")
-	if ok {
-		cfg.DatabaseDSN = databaseDSN
-	}
-
-	auditFile, ok := os.LookupEnv("AUDIT_FILE")
-	if ok {
-		cfg.AuditFile = auditFile
-	}
-
-	auditURL, ok := os.LookupEnv("AUDIT_URL")
-	if ok {
-		cfg.AuditURL = auditURL
-	}
-
-	enableHTTPS, ok := os.LookupEnv("ENABLE_HTTPS")
-	if ok {
-		enableHTTPS = strings.ToLower(enableHTTPS)
-		if enableHTTPS == "true" || enableHTTPS == "1" {
-			cfg.EnableHTTPS = true
-		}
-	}
-
-	certFile, ok := os.LookupEnv("TLS_CERT_FILE")
-	if ok {
-		cfg.TLSCerfFile = certFile
-	}
-
-	keyFile, ok := os.LookupEnv("TLS_KEY_FILE")
-	if ok {
-		cfg.TLSKeyFile = keyFile
-	}
-
-	autoCert, ok := os.LookupEnv("ENABLE_HTTPS")
-	if ok {
-		autoCert = strings.ToLower(autoCert)
-		if autoCert == "true" || autoCert == "1" {
-			cfg.AutoCert = true
-			cfg.TLSCerfFile = ""
-			cfg.TLSKeyFile = ""
-		}
+	if cfg.AutoCert {
+		cfg.TLSCerfFile = ""
+		cfg.TLSKeyFile = ""
 	}
 
 	if cfg.EnableHTTPS && !cfg.AutoCert {

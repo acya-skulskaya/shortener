@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,8 +24,7 @@ import (
 )
 
 const (
-	_shutdownPeriod     = 20 * time.Second
-	_shutdownHardPeriod = 10 * time.Second
+	shutdownPeriod = 20 * time.Second
 )
 
 // ShortUrlsService provides access to URL Shortener storage interface and audit publisher
@@ -55,8 +53,8 @@ func main() {
 	}
 
 	// Setup signal context
-	rootCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	defer stop()
+	rootCtx, stopRootCtx := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stopRootCtx()
 
 	auditPublisher := publisher.NewAuditPublisher()
 	if config.Values.AuditFile != "" || config.Values.AuditURL != "" {
@@ -93,15 +91,9 @@ func main() {
 
 	router := NewRouter(shortURLService)
 
-	// Ensure in-flight requests aren't cancelled immediately on SIGTERM
-	ongoingCtx, stopOngoingGracefully := context.WithCancel(context.Background())
-
 	httpServer := &http.Server{
 		Addr:    config.Values.ServerAddress,
 		Handler: router,
-		BaseContext: func(_ net.Listener) context.Context {
-			return ongoingCtx
-		},
 	}
 	if config.Values.EnableHTTPS {
 		if config.Values.AutoCert {
@@ -142,20 +134,19 @@ func main() {
 
 	// Wait for signal
 	<-rootCtx.Done()
-	stop()
+	stopRootCtx()
 	logger.Log.Info("received shutdown signal, shutting down")
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), _shutdownPeriod)
-	defer cancel()
+	shutdownCtx, cancelShutdownCtx := context.WithTimeout(context.Background(), shutdownPeriod)
+	defer cancelShutdownCtx()
 	err := httpServer.Shutdown(shutdownCtx)
-	stopOngoingGracefully()
-	auditPublisher.Shutdown()
 	if err != nil {
-		logger.Log.Warn("failed to wait for ongoing requests to finish, waiting for forced cancellation")
-		time.Sleep(_shutdownHardPeriod)
+		logger.Log.Warn("could not shutdown http server", zap.Error(err))
 	}
 
-	logger.Log.Info("failed to wait for ongoing requests to finish, waiting for forced cancellation")
+	auditPublisher.Shutdown()
+
+	logger.Log.Info("server shutdown complete")
 }
 
 // NewRouter initiates a new router with API's endpoints:

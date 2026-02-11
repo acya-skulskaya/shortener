@@ -59,6 +59,10 @@ func (s *FileAuditSubscriber) worker() {
 				s.closeFile()
 				return
 			}
+			if s.file == nil {
+				logger.Log.Debug("FileAuditSubscriber::worker file closed")
+				return
+			}
 			logger.Log.Debug("FileAuditSubscriber::worker writing new event to file", zap.Any("event", event))
 			if err := s.encoder.Encode(event); err != nil {
 				logger.Log.Error("FileAuditSubscriber::worker could not write event to audit file", zap.Any("event", event), zap.Error(err))
@@ -66,12 +70,6 @@ func (s *FileAuditSubscriber) worker() {
 
 		case <-s.ctx.Done():
 			logger.Log.Debug("FileAuditSubscriber::worker ctx.Done()")
-			s.mu.Lock()
-			if !s.closed {
-				close(s.eventChan)
-				s.closed = true
-			}
-			s.mu.Unlock()
 			s.closeFile()
 			return
 		}
@@ -84,6 +82,10 @@ func (s *FileAuditSubscriber) ReceiveNewEvent(event model.AuditEvent) {
 		logger.Log.Debug("FileAuditSubscriber::ReceiveNewEvent new event was sent to file channel", zap.Any("event", event))
 	case <-s.ctx.Done():
 		logger.Log.Debug("FileAuditSubscriber::ReceiveNewEvent ctx.Done()")
+		if !s.closed {
+			close(s.eventChan)
+			s.closed = true
+		}
 	}
 }
 

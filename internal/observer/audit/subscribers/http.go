@@ -19,7 +19,6 @@ type HTTPAuditSubscriber struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	wg        sync.WaitGroup
-	mu        sync.Mutex
 	closed    bool
 }
 
@@ -51,6 +50,10 @@ func (s *HTTPAuditSubscriber) ReceiveNewEvent(event model.AuditEvent) {
 		logger.Log.Debug("HTTPAuditSubscriber::ReceiveNewEvent new event was sent to file channel", zap.Any("event", event))
 	case <-s.ctx.Done():
 		logger.Log.Debug("HTTPAuditSubscriber::ReceiveNewEvent ctx.Done()")
+		if !s.closed {
+			close(s.eventChan)
+			s.closed = true
+		}
 	}
 }
 
@@ -84,13 +87,6 @@ func (s *HTTPAuditSubscriber) worker() {
 
 		case <-s.ctx.Done():
 			logger.Log.Debug("HTTPAuditSubscriber::worker ctx.Done()")
-			s.mu.Lock()
-			if !s.closed {
-				close(s.eventChan)
-				s.closed = true
-			}
-			s.mu.Unlock()
-			return
 		}
 	}
 }
