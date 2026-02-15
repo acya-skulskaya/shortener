@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -8,38 +9,107 @@ import (
 	"strings"
 )
 
-// generate:reset
+const (
+	defaultValueServerAddress   = ":8080"
+	defaultValueURLAddress      = "http://localhost:8080"
+	defaultValueLogLevel        = "debug"
+	defaultValueFileStoragePath = ""
+	defaultValueDatabaseDSN     = ""
+	defaultValueAuditFile       = ""
+	defaultValueAuditURL        = ""
+	defaultValueEnableHTTPS     = false
+	defaultValueAutoCert        = false
+	defaultValueTLSCerfFile     = "./resources/ssl/cert.pem"
+	defaultValueTLSKeyFile      = "./resources/ssl/key.pem"
+	defaultValueJSONConfigFile  = ""
+)
+
 type Config struct {
-	ServerAddress   string
-	URLAddress      string
-	LogLevel        string
-	FileStoragePath string
-	DatabaseDSN     string
-	AuditFile       string
-	AuditURL        string
-	EnableHTTPS     bool
-	AutoCert        bool
-	TLSCerfFile     string
-	TLSKeyFile      string
+	ServerAddress   string `json:"server_address,omitempty"`
+	URLAddress      string `json:"base_url,omitempty"`
+	LogLevel        string `json:"log_level,omitempty"`
+	FileStoragePath string `json:"file_storage_path,omitempty"`
+	DatabaseDSN     string `json:"database_dsn,omitempty"`
+	AuditFile       string `json:"audit_file,omitempty"`
+	AuditURL        string `json:"audit_url,omitempty"`
+	EnableHTTPS     bool   `json:"enable_https,omitempty"`
+	AutoCert        bool   `json:"auto_cert,omitempty"`
+	TLSCerfFile     string `json:"tls_cerf_file,omitempty"`
+	TLSKeyFile      string `json:"tls_key_file,omitempty"`
+	jsonConfigFile  string
 }
 
 var Values Config
 
 func Init() error {
 	cfg := Config{}
-	flag.StringVar(&cfg.ServerAddress, "a", ":8080", "address of HTTP server to start")
-	flag.StringVar(&cfg.URLAddress, "b", "http://localhost:8080", "server address in shortened URLs")
-	flag.StringVar(&cfg.LogLevel, "l", "debug", "log level")
-	flag.StringVar(&cfg.FileStoragePath, "f", "", "path to file with short urls")
-	flag.StringVar(&cfg.DatabaseDSN, "d", "", "connection settings for pgsql") // postgres://user:pass@localhost:5432/test-db?sslmode=disable
-	flag.StringVar(&cfg.AuditFile, "audit-file", "", "path to audit file")
-	flag.StringVar(&cfg.AuditURL, "audit-url", "", "url to submit audit data")
-	flag.BoolVar(&cfg.EnableHTTPS, "s", false, "enable https")
-	flag.BoolVar(&cfg.AutoCert, "auto-cert", false, "generate TLS certificate automatically (this option overrides -cert-file and -key-file options)")
-	flag.StringVar(&cfg.TLSCerfFile, "cert-file", "./resources/ssl/cert.pem", "path to TLS certificate")
-	flag.StringVar(&cfg.TLSKeyFile, "key-file", "./resources/ssl/key.pem", "path to TLS key")
+	flag.StringVar(&cfg.ServerAddress, "a", defaultValueServerAddress, "address of HTTP server to start")
+	flag.StringVar(&cfg.URLAddress, "b", defaultValueURLAddress, "server address in shortened URLs")
+	flag.StringVar(&cfg.LogLevel, "l", defaultValueLogLevel, "log level")
+	flag.StringVar(&cfg.FileStoragePath, "f", defaultValueFileStoragePath, "path to file with short urls")
+	flag.StringVar(&cfg.DatabaseDSN, "d", defaultValueDatabaseDSN, "connection settings for pgsql") // postgres://user:pass@localhost:5432/test-db?sslmode=disable
+	flag.StringVar(&cfg.AuditFile, "audit-file", defaultValueAuditFile, "path to audit file")
+	flag.StringVar(&cfg.AuditURL, "audit-url", defaultValueAuditURL, "url to submit audit data")
+	flag.BoolVar(&cfg.EnableHTTPS, "s", defaultValueEnableHTTPS, "enable https")
+	flag.BoolVar(&cfg.AutoCert, "auto-cert", defaultValueAutoCert, "generate TLS certificate automatically (this option overrides -cert-file and -key-file options)")
+	flag.StringVar(&cfg.TLSCerfFile, "cert-file", defaultValueTLSCerfFile, "path to TLS certificate")
+	flag.StringVar(&cfg.TLSKeyFile, "key-file", defaultValueTLSKeyFile, "path to TLS key")
+
+	flag.StringVar(&cfg.jsonConfigFile, "config", defaultValueJSONConfigFile, "path to JSON config file")
+	flag.StringVar(&cfg.jsonConfigFile, "c", defaultValueJSONConfigFile, "path to JSON config file (shorthand)")
 
 	flag.Parse()
+
+	jsonConfigFile, ok := os.LookupEnv("CONFIG")
+	if ok {
+		cfg.jsonConfigFile = jsonConfigFile
+	}
+
+	if cfg.jsonConfigFile != defaultValueJSONConfigFile {
+		jsonConfigData, err := os.ReadFile(cfg.jsonConfigFile)
+		if err != nil {
+			return fmt.Errorf("could not scan JSON config file %s: %w", cfg.jsonConfigFile, err)
+		}
+		var jsonConfigValues Config
+		err = json.Unmarshal(jsonConfigData, &jsonConfigValues)
+		if err != nil {
+			return fmt.Errorf("could not unmarshall JSON config file %s: %w", cfg.jsonConfigFile, err)
+		}
+
+		if cfg.ServerAddress == defaultValueServerAddress && jsonConfigValues.ServerAddress != "" {
+			cfg.ServerAddress = jsonConfigValues.ServerAddress
+		}
+		if cfg.URLAddress == defaultValueURLAddress && jsonConfigValues.URLAddress != "" {
+			cfg.URLAddress = jsonConfigValues.URLAddress
+		}
+		if cfg.LogLevel == defaultValueLogLevel && jsonConfigValues.LogLevel != "" {
+			cfg.LogLevel = jsonConfigValues.LogLevel
+		}
+		if cfg.FileStoragePath == defaultValueFileStoragePath && jsonConfigValues.FileStoragePath != "" {
+			cfg.FileStoragePath = jsonConfigValues.FileStoragePath
+		}
+		if cfg.DatabaseDSN == defaultValueDatabaseDSN && jsonConfigValues.DatabaseDSN != "" {
+			cfg.DatabaseDSN = jsonConfigValues.DatabaseDSN
+		}
+		if cfg.AuditFile == defaultValueAuditFile && jsonConfigValues.AuditFile != "" {
+			cfg.AuditFile = jsonConfigValues.AuditFile
+		}
+		if cfg.AuditURL == defaultValueAuditURL && jsonConfigValues.AuditURL != "" {
+			cfg.AuditURL = jsonConfigValues.AuditURL
+		}
+		if !cfg.EnableHTTPS && jsonConfigValues.EnableHTTPS {
+			cfg.EnableHTTPS = jsonConfigValues.EnableHTTPS
+		}
+		if !cfg.AutoCert && jsonConfigValues.AutoCert {
+			cfg.AutoCert = jsonConfigValues.AutoCert
+		}
+		if cfg.TLSCerfFile == defaultValueTLSCerfFile && jsonConfigValues.TLSCerfFile != "" {
+			cfg.TLSCerfFile = jsonConfigValues.TLSCerfFile
+		}
+		if cfg.TLSKeyFile == defaultValueTLSKeyFile && jsonConfigValues.TLSKeyFile != "" {
+			cfg.TLSKeyFile = jsonConfigValues.TLSKeyFile
+		}
+	}
 
 	serverAddress, ok := os.LookupEnv("SERVER_ADDRESS")
 	if ok {
