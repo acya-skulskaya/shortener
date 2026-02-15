@@ -1,7 +1,7 @@
 {
-  "server_address": "localhost:8080",
-  "base_url": "http://localhost",
+  "server_address": "example.host:8080",
+  "base_url": "http://example.host",
   "file_storage_path": "/path/to/file.db",
-  "database_dsn": "",
+  "database_dsn": "postgres://example_user:example_pass@example.host:5432/test-db?sslmode=disable",
   "enable_https": true
 }
