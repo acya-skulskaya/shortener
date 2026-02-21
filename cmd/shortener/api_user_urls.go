@@ -28,6 +28,7 @@ func (su *ShortUrlsService) apiUserURLs(res http.ResponseWriter, req *http.Reque
 
 	list, err := su.Repo.GetUserUrls(req.Context(), userID)
 	if err != nil {
+		logger.Log.Debug("error getting user urls", zap.Error(err))
 		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

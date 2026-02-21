@@ -180,6 +180,7 @@ func NewRouter(su *ShortUrlsService) *chi.Mux {
 	router.Post("/api/shorten/batch", su.apiShortenBatch)
 	router.Get("/api/user/urls", su.apiUserURLs)
 	router.Delete("/api/user/urls", su.apiDeleteUserURLs)
+	router.Get("/api/internal/stats", su.apiInternalStats)
 
 	return router
 }
