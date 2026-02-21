@@ -14,14 +14,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type RequestData struct {
-	URL string `json:"url"`
-}
-
-type ResponseData struct {
-	Result string `json:"result"`
-}
-
 // apiShorten handles the HTTP request to shorten the URL in the request body in JSON format and return a URL with ID in JSON format
 // Endpoint: POST /api/shorten
 // Expected request body: {"url":"http://example.test"}
@@ -31,6 +23,14 @@ type ResponseData struct {
 //   - 409 Conflict when the URL in the request was already shortened
 //   - 500 Internal Server Error on failure
 func (su *ShortUrlsService) apiShorten(res http.ResponseWriter, req *http.Request) {
+	type RequestData struct {
+		URL string `json:"url"`
+	}
+
+	type ResponseData struct {
+		Result string `json:"result"`
+	}
+
 	var requestData RequestData
 	if err := json.NewDecoder(req.Body).Decode(&requestData); err != nil {
 		logger.Log.Debug("could not parse request body",

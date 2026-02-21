@@ -1,6 +1,7 @@
 package shorturlinmemory
 
 import (
+	"slices"
 	"sync"
 
 	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
@@ -82,6 +83,25 @@ func (c *Container) getByUserID(userID string) (list []shortURL) {
 	}
 
 	return list
+}
+
+func (c *Container) countStats() (urls int, users int) {
+	countURLs := 0
+	var uniqueUsers []string
+
+	for _, item := range c.shortUrls {
+		if item.isDeleted == 1 {
+			continue
+		}
+
+		countURLs++
+
+		if !slices.Contains(uniqueUsers, item.userID) {
+			uniqueUsers = append(uniqueUsers, item.userID)
+		}
+	}
+
+	return countURLs, len(uniqueUsers)
 }
 
 var cont = Container{shortUrls: make(map[string]shortURL, containerMapSize)}

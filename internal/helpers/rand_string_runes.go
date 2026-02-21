@@ -5,6 +5,7 @@ import (
 	"math/rand"
 )
 
+// RandStringRunes generates a string of random characters
 func RandStringRunes(n int) string {
 	letterRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 

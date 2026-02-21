@@ -24,6 +24,10 @@ func (c *FileReader) ReadFile() (list []jsonModel.URLList, error error) {
 		return nil, fmt.Errorf("could not scan file %s: %w", c.filename, err)
 	}
 
+	if len(data) == 0 {
+		return nil, nil
+	}
+
 	err = json.Unmarshal(data, &list)
 	if err != nil {
 		return nil, fmt.Errorf("could not read json: %w", err)
