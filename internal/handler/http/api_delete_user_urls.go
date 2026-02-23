@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/acya-skulskaya/shortener/internal/logger"
-	"github.com/acya-skulskaya/shortener/internal/middleware"
+	authService "github.com/acya-skulskaya/shortener/internal/service/auth"
 	"go.uber.org/zap"
 )
 
@@ -30,7 +30,7 @@ func (su *ShortUrlsService) apiDeleteUserURLs(res http.ResponseWriter, req *http
 	}
 
 	ctx := req.Context()
-	userID, ok := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
+	userID, ok := ctx.Value(authService.AuthContextKey(authService.AuthContextKeyUserID)).(string)
 	if !ok {
 		logger.Log.Debug("could not get userID from context")
 		http.Error(res, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)

@@ -1,43 +1,46 @@
-package main
+package http
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/acya-skulskaya/shortener/internal/helpers"
 	"github.com/acya-skulskaya/shortener/internal/observer/audit/publisher"
 	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_apiPageMain(t *testing.T) {
-	type want struct {
-		code        int
-		response    string
-		contentType string
-	}
+func Test_apiShortenBatch(t *testing.T) {
 	tests := []struct {
-		name   string
-		method string
-		want   want
+		name                string
+		method              string
+		body                string // добавляем тело запроса в табличные тесты
+		expectedCode        int
+		expectedContentType string
 	}{
 		{
-			name:   "short url created",
+			name:   "short urls stored",
 			method: http.MethodPost,
-			want: want{
-				code:        http.StatusCreated,
-				response:    "url",
-				contentType: "text/plain; charset=utf-8",
-			},
+			body: fmt.Sprintf(`[
+    {
+        "correlation_id": "%s",
+        "original_url": "http://test.com"
+    },
+    {
+        "correlation_id": "%s",
+        "original_url": "http://test2.com"
+    }
+]`, helpers.RandStringRunes(10), helpers.RandStringRunes(10)),
+			expectedCode:        http.StatusCreated,
+			expectedContentType: "application/json",
 		},
 	}
-
-	os.Remove("./urls.json")
 
 	auditPublisher := publisher.NewAuditPublisher()
 	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"}, auditPublisher)
@@ -48,9 +51,8 @@ func Test_apiPageMain(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			link := "https://practicum.yandex.ru/learn/go-advanced/courses/7154aca2-2665-440e-99ef-9dec1dfa1cd1/sprints/634244/topics/75da540c-e78d-4fdb-be66-c94ca0f88f58/lessons/6f432b47-f47c-4544-a686-7e2a94105cd6/"
-			bodyReader := strings.NewReader(link)
-			request, err := http.NewRequest(test.method, testServer.URL+"/", bodyReader)
+			bodyReader := strings.NewReader(test.body)
+			request, err := http.NewRequest(test.method, testServer.URL+"/api/shorten/batch", bodyReader)
 			require.NoError(t, err)
 
 			client := &http.Client{}
@@ -60,20 +62,16 @@ func Test_apiPageMain(t *testing.T) {
 			defer res.Body.Close()
 
 			// проверяем код ответа
-			assert.Equal(t, test.want.code, res.StatusCode)
+			assert.Equal(t, test.expectedCode, res.StatusCode)
 			// проверяем Content-Type
-			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
+			assert.Equal(t, test.expectedContentType, res.Header.Get("Content-Type"))
 			// получаем и проверяем тело запроса
 			defer res.Body.Close()
-			resBody, err := io.ReadAll(res.Body)
+			_, err = io.ReadAll(res.Body)
 
 			require.NoError(t, err)
-			if test.want.response == "url" {
-				_, err := url.ParseRequestURI(string(resBody))
-				assert.NoError(t, err)
-			} else {
-				assert.Equal(t, test.want.response, string(resBody))
-			}
 		})
 	}
+
+	os.Remove("./urls.json")
 }

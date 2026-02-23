@@ -1,19 +1,22 @@
-package main
+package http
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 
+	"github.com/acya-skulskaya/shortener/internal/config"
 	"github.com/acya-skulskaya/shortener/internal/observer/audit/publisher"
 	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_apiDeleteUserURLs(t *testing.T) {
+func Test_apiPageByID(t *testing.T) {
+	config.Init()
+
 	type want struct {
 		code        int
 		response    string
@@ -25,19 +28,20 @@ func Test_apiDeleteUserURLs(t *testing.T) {
 		want   want
 	}{
 		{
-			name:   "endpoint returns accepted response",
-			method: http.MethodDelete,
+			name:   "short url redirects",
+			method: http.MethodGet,
 			want: want{
-				code: http.StatusAccepted,
+				code:        http.StatusTemporaryRedirect,
+				response:    "Temporary Redirect\n",
+				contentType: "text/html; charset=utf-8",
 			},
 		},
 	}
 
-	os.Remove("./urls.json")
-
 	auditPublisher := publisher.NewAuditPublisher()
 	repo := &shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"}
 	shortURLService := NewShortUrlsService(repo, auditPublisher)
+	id, _ := repo.Store(context.Background(), "https://test.com", "userID123")
 
 	router := NewRouter(shortURLService)
 	testServer := httptest.NewServer(router)
@@ -45,27 +49,25 @@ func Test_apiDeleteUserURLs(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			bodyReader := strings.NewReader(`[{"correlation_id": "tgkPCfkqXF","original_url": "http://test.com"},{"correlation_id": "tgkPCfkqXg","original_url": "http://test2.com"}]`)
-			request, err := http.NewRequest(http.MethodPost, testServer.URL+"/api/shorten/batch", bodyReader)
+			request, err := http.NewRequest(test.method, testServer.URL+"/"+id, nil)
 			require.NoError(t, err)
-			res, err := testServer.Client().Do(request)
-			require.NoError(t, err)
-			res.Body.Close()
-			cookies := res.Cookies()
 
-			bodyReader = strings.NewReader(`["tgkPCfkqXF"]`)
-			request, err = http.NewRequest(test.method, testServer.URL+"/api/user/urls", bodyReader)
-			require.NoError(t, err)
-			for _, cookie := range cookies {
-				request.AddCookie(cookie)
+			client := &http.Client{
+				CheckRedirect: func(req *http.Request, via []*http.Request) error {
+					return http.ErrUseLastResponse
+				},
 			}
 
-			response, err := testServer.Client().Do(request)
+			response, err := client.Do(request)
 			require.NoError(t, err)
 			defer response.Body.Close()
 
 			// проверяем код ответа
 			assert.Equal(t, test.want.code, response.StatusCode)
+			// проверяем Content-Type
+			assert.Equal(t, test.want.contentType, response.Header.Get("Content-Type"))
 		})
 	}
+
+	os.Remove("./urls.json")
 }

@@ -3,43 +3,33 @@ package main
 import (
 	"context"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	pb "github.com/acya-skulskaya/shortener/api/shortener"
 	"github.com/acya-skulskaya/shortener/internal/config"
+	grpcHandler "github.com/acya-skulskaya/shortener/internal/handler/grpc"
+	httpHandler "github.com/acya-skulskaya/shortener/internal/handler/http"
+	"github.com/acya-skulskaya/shortener/internal/interceptors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
-	"github.com/acya-skulskaya/shortener/internal/middleware"
 	"github.com/acya-skulskaya/shortener/internal/observer/audit/publisher"
 	"github.com/acya-skulskaya/shortener/internal/observer/audit/subscribers"
 	interfaces "github.com/acya-skulskaya/shortener/internal/repository/interface"
 	shorturlindb "github.com/acya-skulskaya/shortener/internal/repository/short_url_in_db"
 	shorturlinmemory "github.com/acya-skulskaya/shortener/internal/repository/short_url_in_memory"
 	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
-	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/acme/autocert"
+	"google.golang.org/grpc"
 )
 
 const (
 	shutdownPeriod = 20 * time.Second
 )
-
-// ShortUrlsService provides access to URL Shortener storage interface and audit publisher
-type ShortUrlsService struct {
-	Repo           interfaces.ShortURLRepository
-	auditPublisher publisher.Publisher
-}
-
-// NewShortUrlsService creates a new instance of ShortUrlsService
-func NewShortUrlsService(su interfaces.ShortURLRepository, ap publisher.Publisher) *ShortUrlsService {
-	return &ShortUrlsService{
-		Repo:           su,
-		auditPublisher: ap,
-	}
-}
 
 func main() {
 	printBuildInfo()
@@ -72,25 +62,25 @@ func main() {
 		}
 	}
 
-	var shortURLService *ShortUrlsService
+	var repo interfaces.ShortURLRepository
 	if len(config.Values.DatabaseDSN) != 0 {
-		db, err := shorturlindb.NewInDBShortURLRepository(config.Values.DatabaseDSN)
+		repo, err := shorturlindb.NewInDBShortURLRepository(config.Values.DatabaseDSN)
 		if err != nil {
 			logger.Log.Fatal("failed to init db storage", zap.Error(err))
 		}
-		defer db.Close()
-		shortURLService = NewShortUrlsService(&shorturlindb.InDBShortURLRepository{DB: db}, auditPublisher)
+		defer repo.Close()
 		logger.Log.Info("using db storage", zap.String("DatabaseDSN", config.Values.DatabaseDSN))
 	} else if len(config.Values.FileStoragePath) != 0 {
-		shortURLService = NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: config.Values.FileStoragePath}, auditPublisher)
+		repo = &shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: config.Values.FileStoragePath}
 		logger.Log.Info("using file storage", zap.String("FileStoragePath", config.Values.FileStoragePath))
 	} else {
-		shortURLService = NewShortUrlsService(&shorturlinmemory.InMemoryShortURLRepository{}, auditPublisher)
+		repo = &shorturlinmemory.InMemoryShortURLRepository{}
 		logger.Log.Info("using in memory storage")
 	}
 
-	router := NewRouter(shortURLService)
-
+	// ************************ HTTP ************************
+	shortURLService := httpHandler.NewShortUrlsService(repo, auditPublisher)
+	router := httpHandler.NewRouter(shortURLService)
 	httpServer := &http.Server{
 		Addr:    config.Values.ServerAddress,
 		Handler: router,
@@ -132,6 +122,45 @@ func main() {
 		}()
 	}
 
+	// ************************ gRPC ************************
+	listen, err := net.Listen("tcp", config.Values.GRPCServerAddress)
+	if err != nil {
+		log.Fatalf("failed listen: %v", err)
+	}
+	tlsCreds, err := grpcHandler.LoadTLSCredentials()
+	if err != nil {
+		logger.Log.Debug("could not get TLS credentials", zap.Error(err))
+	}
+	var grpcServer *grpc.Server
+	chainUnaryInterceptor := grpc.ChainUnaryInterceptor(
+		interceptors.LoggingUnaryInterceptor,
+		interceptors.AuthUnaryInterceptor,
+	)
+	if tlsCreds != nil {
+		grpcServer = grpc.NewServer(
+			grpc.Creds(tlsCreds),
+			chainUnaryInterceptor,
+		)
+	} else {
+		grpcServer = grpc.NewServer(
+			chainUnaryInterceptor,
+		)
+	}
+
+	pb.RegisterShortenerServiceServer(grpcServer, &grpcHandler.ShortenerServer{
+		UnimplementedShortenerServiceServer: pb.UnimplementedShortenerServiceServer{},
+		Repo:                                repo,
+		AuditPublisher:                      auditPublisher,
+	})
+	go func() {
+		logger.Log.Info("starting gRPC server",
+			zap.String("GRPCServerAddress", config.Values.GRPCServerAddress),
+		)
+		if err := grpcServer.Serve(listen); err != nil && err != grpc.ErrServerStopped {
+			log.Fatalf("failed to listen and serve grpc: %v", err)
+		}
+	}()
+
 	// Wait for signal
 	<-rootCtx.Done()
 	stopRootCtx()
@@ -139,7 +168,22 @@ func main() {
 
 	shutdownCtx, cancelShutdownCtx := context.WithTimeout(context.Background(), shutdownPeriod)
 	defer cancelShutdownCtx()
-	err := httpServer.Shutdown(shutdownCtx)
+
+	grpcServerStop := make(chan struct{})
+	go func() {
+		grpcServer.GracefulStop()
+		close(grpcServerStop)
+	}()
+
+	select {
+	case <-grpcServerStop:
+		logger.Log.Info("gRPC server gracefully stopped")
+	case <-shutdownCtx.Done():
+		logger.Log.Debug("gRPC graceful shutdown timed out, forcing shutdown...")
+		grpcServer.Stop()
+	}
+
+	err = httpServer.Shutdown(shutdownCtx)
 	if err != nil {
 		logger.Log.Warn("could not shutdown http server", zap.Error(err))
 	}
@@ -147,40 +191,4 @@ func main() {
 	auditPublisher.Shutdown()
 
 	logger.Log.Info("server shutdown complete")
-}
-
-// NewRouter initiates a new router with API's endpoints:
-//   - POST / - creates a shortened URL
-//   - GET /{id} — redirects to the original URL
-//   - GET /ping — tests connection to DB
-//   - POST /api/shorten - creates a shortened URL
-//   - POST /api/shorten/batch - creates a  list of shortened URLs
-//   - GET /api/user/urls - returns a list of URLs that were added by an authenticated user
-//   - DELETE /api/user/urls - deletes a list of shortened URLs
-func NewRouter(su *ShortUrlsService) *chi.Mux {
-	router := chi.NewRouter()
-
-	router.Use(middleware.RequestLogger)
-	router.Use(middleware.RequestCompressor)
-	router.Use(middleware.CookieAuth)
-
-	// pprof
-	//router.Route("/debug/pprof", func(r chi.Router) {
-	//	r.Handle("/", http.HandlerFunc(pprof.Index))
-	//	r.Handle("/profile", http.HandlerFunc(pprof.Profile))
-	//	r.Handle("/symbol", http.HandlerFunc(pprof.Symbol))
-	//	r.Handle("/cmdline", http.HandlerFunc(pprof.Cmdline))
-	//	r.Handle("/heap", pprof.Handler("heap"))
-	//})
-
-	router.Post("/", su.apiPageMain)
-	router.Get("/{id}", su.apiPageByID)
-	router.Get("/ping", su.apiPingDB)
-	router.Post("/api/shorten", su.apiShorten)
-	router.Post("/api/shorten/batch", su.apiShortenBatch)
-	router.Get("/api/user/urls", su.apiUserURLs)
-	router.Delete("/api/user/urls", su.apiDeleteUserURLs)
-	router.Get("/api/internal/stats", su.apiInternalStats)
-
-	return router
 }

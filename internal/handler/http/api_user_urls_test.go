@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"encoding/json"
@@ -40,8 +40,6 @@ func Test_apiUserURLs(t *testing.T) {
 			},
 		},
 	}
-
-	os.Remove("./urls.json")
 
 	auditPublisher := publisher.NewAuditPublisher()
 	repo := &shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"}
@@ -97,4 +95,6 @@ func Test_apiUserURLs(t *testing.T) {
 			assert.Equal(t, test.want.numUrls, len(list))
 		})
 	}
+
+	os.Remove("./urls.json")
 }

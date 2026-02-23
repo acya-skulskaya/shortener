@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"net/http"
@@ -49,8 +49,6 @@ func TestShortUrlsService_apiInternalStats(t *testing.T) {
 		},
 	}
 
-	os.Remove("./urls.json")
-
 	auditPublisher := publisher.NewAuditPublisher()
 	repo := &shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"}
 	shortURLService := NewShortUrlsService(repo, auditPublisher)
@@ -81,4 +79,6 @@ func TestShortUrlsService_apiInternalStats(t *testing.T) {
 			assert.Equal(t, test.want.code, response.StatusCode)
 		})
 	}
+
+	os.Remove("./urls.json")
 }

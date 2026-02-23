@@ -52,3 +52,8 @@ git fetch template && git checkout template/v2 .github
 - коммит берется из переменной окружения `COMMIT_HASH` 
 
 При запуске приложения без предварительной компиляции `$ go run ./cmd/shortener` данные о версии, дате сборки и коммите так же будут взяты из переменных окружения, если они установлены
+
+## Генерация Proto
+```shell
+$ make build-shortener-proto
+```

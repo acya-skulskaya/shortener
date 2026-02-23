@@ -1,7 +1,6 @@
-package main
+package http
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -9,14 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/acya-skulskaya/shortener/internal/helpers"
 	"github.com/acya-skulskaya/shortener/internal/observer/audit/publisher"
 	shorturljsonfile "github.com/acya-skulskaya/shortener/internal/repository/short_url_json_file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_apiShortenBatch(t *testing.T) {
+func Test_apiShorten(t *testing.T) {
 	tests := []struct {
 		name                string
 		method              string
@@ -25,24 +23,20 @@ func Test_apiShortenBatch(t *testing.T) {
 		expectedContentType string
 	}{
 		{
-			name:   "short urls stored",
-			method: http.MethodPost,
-			body: fmt.Sprintf(`[
-    {
-        "correlation_id": "%s",
-        "original_url": "http://test.com"
-    },
-    {
-        "correlation_id": "%s",
-        "original_url": "http://test2.com"
-    }
-]`, helpers.RandStringRunes(10), helpers.RandStringRunes(10)),
+			name:                "short url created",
+			method:              http.MethodPost,
+			body:                `{"url": "http://test.test"}`,
 			expectedCode:        http.StatusCreated,
 			expectedContentType: "application/json",
 		},
+		{
+			name:                "500 error on invalid json",
+			method:              http.MethodPost,
+			body:                `{"url": "http://test.test}`,
+			expectedCode:        http.StatusInternalServerError,
+			expectedContentType: "text/plain; charset=utf-8",
+		},
 	}
-
-	os.Remove("./urls.json")
 
 	auditPublisher := publisher.NewAuditPublisher()
 	shortURLService := NewShortUrlsService(&shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"}, auditPublisher)
@@ -54,7 +48,7 @@ func Test_apiShortenBatch(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			bodyReader := strings.NewReader(test.body)
-			request, err := http.NewRequest(test.method, testServer.URL+"/api/shorten/batch", bodyReader)
+			request, err := http.NewRequest(test.method, testServer.URL+"/api/shorten", bodyReader)
 			require.NoError(t, err)
 
 			client := &http.Client{}
@@ -69,9 +63,12 @@ func Test_apiShortenBatch(t *testing.T) {
 			assert.Equal(t, test.expectedContentType, res.Header.Get("Content-Type"))
 			// получаем и проверяем тело запроса
 			defer res.Body.Close()
+			//resBody, err := io.ReadAll(res.Body)
 			_, err = io.ReadAll(res.Body)
 
 			require.NoError(t, err)
 		})
 	}
+
+	os.Remove("./urls.json")
 }

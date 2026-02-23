@@ -1,4 +1,5 @@
 .PHONY: build-shortener
+.PHONY: build-shortener-proto
 
 ifdef VERSION
 VERSION := $(VERSION)
@@ -24,3 +25,11 @@ build-shortener:
 	-X main.buildDate=$(BUILD_DATE) \
 	-X main.buildCommit=$(COMMIT_HASH)" \
 	./cmd/shortener/
+
+build-shortener-proto:
+	protoc --go_out=.\
+    --go_opt=paths=source_relative \
+    --go-grpc_out=. \
+	--go-grpc_opt=paths=source_relative \
+    --go_opt=default_api_level=API_OPAQUE \
+    api/shortener/shortener.proto
