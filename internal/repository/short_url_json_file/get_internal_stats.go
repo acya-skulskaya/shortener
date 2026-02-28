@@ -2,7 +2,6 @@ package shorturljsonfile
 
 import (
 	"context"
-	"slices"
 
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	"go.uber.org/zap"
@@ -24,7 +23,7 @@ func (repo *JSONFileShortURLRepository) GetInternalStats(ctx context.Context) (u
 	}
 
 	var countURLs int
-	var uniqueUsers []string
+	uniqueUsers := make(map[string]struct{})
 
 	for _, l := range list {
 		if l.IsDeleted == 1 {
@@ -32,8 +31,8 @@ func (repo *JSONFileShortURLRepository) GetInternalStats(ctx context.Context) (u
 		}
 		countURLs++
 
-		if !slices.Contains(uniqueUsers, l.UserID) {
-			uniqueUsers = append(uniqueUsers, l.UserID)
+		if _, exists := uniqueUsers[l.UserID]; !exists {
+			uniqueUsers[l.UserID] = struct{}{}
 		}
 	}
 

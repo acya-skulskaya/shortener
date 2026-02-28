@@ -28,7 +28,7 @@ func (su *ShortUrlsService) apiPageByID(res http.ResponseWriter, req *http.Reque
 	}
 
 	id := chi.URLParam(req, "id")
-	url, err := su.Repo.Get(req.Context(), id)
+	url, err := su.repo.Get(req.Context(), id)
 	if err != nil {
 		if errors.Is(err, errorsInternal.ErrIDNotFound) {
 			logger.Log.Debug("id does not exist",

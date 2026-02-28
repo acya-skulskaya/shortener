@@ -36,7 +36,7 @@ func TestShortUrlsService_apiInternalStats(t *testing.T) {
 			trustedSubnet: "192.168.1.0/24",
 			headerIP:      "92.68.1.1",
 			want: want{
-				code: http.StatusUnauthorized,
+				code: http.StatusForbidden,
 			},
 		},
 		{
@@ -44,7 +44,7 @@ func TestShortUrlsService_apiInternalStats(t *testing.T) {
 			trustedSubnet: "",
 			headerIP:      "92.68.1.1",
 			want: want{
-				code: http.StatusUnauthorized,
+				code: http.StatusForbidden,
 			},
 		},
 	}

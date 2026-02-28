@@ -2,9 +2,11 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	pb "github.com/acya-skulskaya/shortener/api/shortener"
+	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
 	models "github.com/acya-skulskaya/shortener/internal/model/json"
 	authService "github.com/acya-skulskaya/shortener/internal/service/auth"
@@ -22,8 +24,11 @@ func (s *ShortenerServer) ShortenURL(ctx context.Context, in *pb.URLShortenReque
 	}
 
 	id, err := s.Repo.Store(ctx, url, userID)
+	if err != nil {
+		if errors.Is(err, errorsInternal.ErrConflictOriginalURL) && len(id) > 0 {
+			return nil, status.Errorf(codes.AlreadyExists, "url already shortened, id %s", id)
+		}
 
-	if len(id) == 0 {
 		return nil, status.Errorf(codes.Internal, "could not create short url: %v", err)
 	}
 

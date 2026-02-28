@@ -42,7 +42,7 @@ func (su *ShortUrlsService) apiDeleteUserURLs(res http.ResponseWriter, req *http
 		ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
-		su.Repo.DeleteUserUrls(ctxWithTimeout, list, userID)
+		su.repo.DeleteUserUrls(ctxWithTimeout, list, userID)
 	}()
 
 	res.WriteHeader(http.StatusAccepted)

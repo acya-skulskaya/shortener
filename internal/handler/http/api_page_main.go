@@ -43,7 +43,7 @@ func (su *ShortUrlsService) apiPageMain(res http.ResponseWriter, req *http.Reque
 		http.Error(res, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	id, err := su.Repo.Store(ctx, url, userID)
+	id, err := su.repo.Store(ctx, url, userID)
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 

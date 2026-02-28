@@ -26,7 +26,7 @@ func (su *ShortUrlsService) apiInternalStats(res http.ResponseWriter, req *http.
 	res.Header().Set("Content-Type", "application/json")
 
 	if config.Values.TrustedSubnet == "" {
-		http.Error(res, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		http.Error(res, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 
@@ -40,11 +40,11 @@ func (su *ShortUrlsService) apiInternalStats(res http.ResponseWriter, req *http.
 		return
 	}
 	if !checkIPResult {
-		http.Error(res, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		http.Error(res, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 
-	urls, users, err := su.Repo.GetInternalStats(req.Context())
+	urls, users, err := su.repo.GetInternalStats(req.Context())
 	if err != nil {
 		logger.Log.Debug("could not get internal stats", zap.Error(err))
 		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

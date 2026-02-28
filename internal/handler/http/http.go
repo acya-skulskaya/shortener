@@ -7,14 +7,14 @@ import (
 
 // ShortUrlsService provides access to URL Shortener storage interface and audit publisher
 type ShortUrlsService struct {
-	Repo           interfaces.ShortURLRepository
+	repo           interfaces.ShortURLRepository
 	auditPublisher publisher.Publisher
 }
 
 // NewShortUrlsService creates a new instance of ShortUrlsService
 func NewShortUrlsService(su interfaces.ShortURLRepository, ap publisher.Publisher) *ShortUrlsService {
 	return &ShortUrlsService{
-		Repo:           su,
+		repo:           su,
 		auditPublisher: ap,
 	}
 }
