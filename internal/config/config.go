@@ -11,18 +11,20 @@ import (
 )
 
 type Config struct {
-	ServerAddress   string `json:"server_address,omitempty" env:"SERVER_ADDRESS" env-default:":8080"`
-	URLAddress      string `json:"base_url,omitempty" env:"BASE_URL" env-default:"http://localhost:8080"`
-	LogLevel        string `json:"log_level,omitempty" env:"LOG_LEVEL" env-default:"debug"`
-	FileStoragePath string `json:"file_storage_path,omitempty" env:"FILE_STORAGE_PATH" env-default:""`
-	DatabaseDSN     string `json:"database_dsn,omitempty" env:"DATABASE_DSN" env-default:""`
-	AuditFile       string `json:"audit_file,omitempty" env:"AUDIT_FILE" env-default:""`
-	AuditURL        string `json:"audit_url,omitempty" env:"AUDIT_URL" env-default:"false"`
-	EnableHTTPS     bool   `json:"enable_https,omitempty" env:"ENABLE_HTTPS" env-default:"false"`
-	AutoCert        bool   `json:"auto_cert,omitempty" env:"AUTO_CERT" env-default:"false"`
-	TLSCerfFile     string `json:"tls_cerf_file,omitempty" env:"TLS_CERT_FILE" env-default:"./resources/ssl/cert.pem"`
-	TLSKeyFile      string `json:"tls_key_file,omitempty" env:"TLS_KEY_FILE" env-default:"./resources/ssl/key.pem"`
-	jsonConfigFile  string
+	ServerAddress     string `json:"server_address,omitempty" env:"SERVER_ADDRESS" env-default:":8080"`
+	GRPCServerAddress string `json:"grpc_server_address,omitempty" env:"GRPC_SERVER_ADDRESS" env-default:":50051"`
+	URLAddress        string `json:"base_url,omitempty" env:"BASE_URL" env-default:"http://localhost:8080"`
+	LogLevel          string `json:"log_level,omitempty" env:"LOG_LEVEL" env-default:"debug"`
+	FileStoragePath   string `json:"file_storage_path,omitempty" env:"FILE_STORAGE_PATH" env-default:""`
+	DatabaseDSN       string `json:"database_dsn,omitempty" env:"DATABASE_DSN" env-default:""`
+	AuditFile         string `json:"audit_file,omitempty" env:"AUDIT_FILE" env-default:""`
+	AuditURL          string `json:"audit_url,omitempty" env:"AUDIT_URL" env-default:""`
+	EnableHTTPS       bool   `json:"enable_https,omitempty" env:"ENABLE_HTTPS" env-default:"false"`
+	AutoCert          bool   `json:"auto_cert,omitempty" env:"AUTO_CERT" env-default:"false"`
+	TLSCerfFile       string `json:"tls_cerf_file,omitempty" env:"TLS_CERT_FILE" env-default:"./resources/ssl/cert.pem"`
+	TLSKeyFile        string `json:"tls_key_file,omitempty" env:"TLS_KEY_FILE" env-default:"./resources/ssl/key.pem"`
+	TrustedSubnet     string `json:"trusted_subnet,omitempty" env:"TRUSTED_SUBNET" env-default:""`
+	jsonConfigFile    string
 }
 
 var Values Config
@@ -30,6 +32,8 @@ var Values Config
 func Init() error {
 	cfgFlag := Config{}
 	flag.StringVar(&cfgFlag.ServerAddress, "a", "", "address of HTTP server to start")
+	flag.StringVar(&cfgFlag.GRPCServerAddress, "grpc-server-address", "", "address of gRPC server to start")
+	flag.StringVar(&cfgFlag.GRPCServerAddress, "g", "", "address of gRPC server to start")
 	flag.StringVar(&cfgFlag.URLAddress, "b", "", "server address in shortened URLs")
 	flag.StringVar(&cfgFlag.LogLevel, "l", "", "log level")
 	flag.StringVar(&cfgFlag.FileStoragePath, "f", "", "path to file with short urls")
@@ -40,6 +44,7 @@ func Init() error {
 	flag.BoolVar(&cfgFlag.AutoCert, "auto-cert", false, "generate TLS certificate automatically (this option overrides -cert-file and -key-file options)")
 	flag.StringVar(&cfgFlag.TLSCerfFile, "cert-file", "", "path to TLS certificate")
 	flag.StringVar(&cfgFlag.TLSKeyFile, "key-file", "", "path to TLS key")
+	flag.StringVar(&cfgFlag.TrustedSubnet, "t", "", "trusted subnet") // 192.168.1.0/24
 
 	flag.StringVar(&cfgFlag.jsonConfigFile, "config", "", "path to JSON config file")
 	flag.StringVar(&cfgFlag.jsonConfigFile, "c", "", "path to JSON config file (shorthand)")

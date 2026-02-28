@@ -84,4 +84,23 @@ func (c *Container) getByUserID(userID string) (list []shortURL) {
 	return list
 }
 
+func (c *Container) countStats() (urls int, users int) {
+	countURLs := 0
+	uniqueUsers := make(map[string]struct{})
+
+	for _, item := range c.shortUrls {
+		if item.isDeleted == 1 {
+			continue
+		}
+
+		countURLs++
+
+		if _, exists := uniqueUsers[item.userID]; !exists {
+			uniqueUsers[item.userID] = struct{}{}
+		}
+	}
+
+	return countURLs, len(uniqueUsers)
+}
+
 var cont = Container{shortUrls: make(map[string]shortURL, containerMapSize)}

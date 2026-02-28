@@ -10,6 +10,9 @@ import (
 // It provides methods to create, retrieve, and manage shortened URLs.
 type ShortURLRepository interface {
 
+	// GetInternalStats retrieves number of users and shortened URLs
+	GetInternalStats(ctx context.Context) (urls int, users int, err error)
+
 	// Get retrieves a shortened URL by ID or returns an error if ID does not exist
 	Get(ctx context.Context, id string) (originalURL string, err error)
 

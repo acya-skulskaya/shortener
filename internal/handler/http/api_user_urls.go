@@ -1,11 +1,11 @@
-package main
+package http
 
 import (
 	"encoding/json"
 	"net/http"
 
 	"github.com/acya-skulskaya/shortener/internal/logger"
-	"github.com/acya-skulskaya/shortener/internal/middleware"
+	authService "github.com/acya-skulskaya/shortener/internal/service/auth"
 	"go.uber.org/zap"
 )
 
@@ -18,7 +18,7 @@ import (
 //   - 500 Internal Server Error on failure
 func (su *ShortUrlsService) apiUserURLs(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	userID, ok := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
+	userID, ok := ctx.Value(authService.AuthContextKey(authService.AuthContextKeyUserID)).(string)
 	if !ok {
 		logger.Log.Debug("could nt get userID from context")
 		http.Error(res, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
@@ -26,8 +26,9 @@ func (su *ShortUrlsService) apiUserURLs(res http.ResponseWriter, req *http.Reque
 	}
 	res.Header().Set("Content-Type", "application/json")
 
-	list, err := su.Repo.GetUserUrls(req.Context(), userID)
+	list, err := su.repo.GetUserUrls(req.Context(), userID)
 	if err != nil {
+		logger.Log.Debug("error getting user urls", zap.Error(err))
 		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

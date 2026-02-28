@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"net/http"
@@ -33,8 +33,6 @@ func Test_apiDeleteUserURLs(t *testing.T) {
 		},
 	}
 
-	os.Remove("./urls.json")
-
 	auditPublisher := publisher.NewAuditPublisher()
 	repo := &shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"}
 	shortURLService := NewShortUrlsService(repo, auditPublisher)
@@ -68,4 +66,6 @@ func Test_apiDeleteUserURLs(t *testing.T) {
 			assert.Equal(t, test.want.code, response.StatusCode)
 		})
 	}
+
+	os.Remove("./urls.json")
 }

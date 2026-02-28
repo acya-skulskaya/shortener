@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"encoding/json"
@@ -7,8 +7,8 @@ import (
 
 	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
-	"github.com/acya-skulskaya/shortener/internal/middleware"
 	jsonModel "github.com/acya-skulskaya/shortener/internal/model/json"
+	authService "github.com/acya-skulskaya/shortener/internal/service/auth"
 	"go.uber.org/zap"
 )
 
@@ -33,14 +33,14 @@ func (su *ShortUrlsService) apiShortenBatch(res http.ResponseWriter, req *http.R
 	res.Header().Set("Content-Type", "application/json")
 
 	ctx := req.Context()
-	userID, ok := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
+	userID, ok := ctx.Value(authService.AuthContextKey(authService.AuthContextKeyUserID)).(string)
 	if !ok {
 		logger.Log.Debug("could nt get userID from context")
 		http.Error(res, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 
-	listShortened, err := su.Repo.StoreBatch(req.Context(), list, userID)
+	listShortened, err := su.repo.StoreBatch(req.Context(), list, userID)
 	if err != nil && (errors.Is(err, errorsInternal.ErrConflictOriginalURL) || errors.Is(err, errorsInternal.ErrConflictID)) {
 		res.WriteHeader(http.StatusConflict)
 	} else {

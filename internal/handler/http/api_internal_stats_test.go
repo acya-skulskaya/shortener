@@ -1,7 +1,6 @@
-package main
+package http
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,36 +13,45 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_apiPageByID(t *testing.T) {
-	config.Init()
-
+func TestShortUrlsService_apiInternalStats(t *testing.T) {
 	type want struct {
-		code        int
-		response    string
-		contentType string
+		code int
 	}
 	tests := []struct {
-		name   string
-		method string
-		want   want
+		name          string
+		trustedSubnet string
+		headerIP      string
+		want          want
 	}{
 		{
-			name:   "short url redirects",
-			method: http.MethodGet,
+			name:          "endpoint returns stats",
+			trustedSubnet: "192.168.1.0/24",
+			headerIP:      "192.168.1.1",
 			want: want{
-				code:        http.StatusTemporaryRedirect,
-				response:    "Temporary Redirect\n",
-				contentType: "text/html; charset=utf-8",
+				code: http.StatusOK,
+			},
+		},
+		{
+			name:          "user IPis not in trusted subnet",
+			trustedSubnet: "192.168.1.0/24",
+			headerIP:      "92.68.1.1",
+			want: want{
+				code: http.StatusForbidden,
+			},
+		},
+		{
+			name:          "trusted subnet is not set",
+			trustedSubnet: "",
+			headerIP:      "92.68.1.1",
+			want: want{
+				code: http.StatusForbidden,
 			},
 		},
 	}
 
-	os.Remove("./urls.json")
-
 	auditPublisher := publisher.NewAuditPublisher()
 	repo := &shorturljsonfile.JSONFileShortURLRepository{FileStoragePath: "./urls.json"}
 	shortURLService := NewShortUrlsService(repo, auditPublisher)
-	id, _ := repo.Store(context.Background(), "https://test.com", "userID123")
 
 	router := NewRouter(shortURLService)
 	testServer := httptest.NewServer(router)
@@ -51,8 +59,11 @@ func Test_apiPageByID(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			request, err := http.NewRequest(test.method, testServer.URL+"/"+id, nil)
+			config.Values.TrustedSubnet = test.trustedSubnet
+
+			request, err := http.NewRequest(http.MethodGet, testServer.URL+"/api/internal/stats", nil)
 			require.NoError(t, err)
+			request.Header.Add("X-Real-IP", test.headerIP)
 
 			client := &http.Client{
 				CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -66,8 +77,8 @@ func Test_apiPageByID(t *testing.T) {
 
 			// проверяем код ответа
 			assert.Equal(t, test.want.code, response.StatusCode)
-			// проверяем Content-Type
-			assert.Equal(t, test.want.contentType, response.Header.Get("Content-Type"))
 		})
 	}
+
+	os.Remove("./urls.json")
 }

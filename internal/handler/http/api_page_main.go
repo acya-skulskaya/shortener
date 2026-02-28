@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"errors"
@@ -9,8 +9,8 @@ import (
 	"github.com/acya-skulskaya/shortener/internal/config"
 	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
-	"github.com/acya-skulskaya/shortener/internal/middleware"
 	models "github.com/acya-skulskaya/shortener/internal/model/json"
+	authService "github.com/acya-skulskaya/shortener/internal/service/auth"
 	"go.uber.org/zap"
 )
 
@@ -37,13 +37,13 @@ func (su *ShortUrlsService) apiPageMain(res http.ResponseWriter, req *http.Reque
 
 	url := string(body)
 	ctx := req.Context()
-	userID, ok := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
+	userID, ok := ctx.Value(authService.AuthContextKey(authService.AuthContextKeyUserID)).(string)
 	if !ok {
 		logger.Log.Debug("could nt get userID from context")
 		http.Error(res, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	id, err := su.Repo.Store(ctx, url, userID)
+	id, err := su.repo.Store(ctx, url, userID)
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 

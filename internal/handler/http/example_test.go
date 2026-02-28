@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"fmt"
@@ -175,7 +175,7 @@ func Example_apiUserURLs_Test() {
 	defer res.Body.Close()
 
 	// Result:
-	// Status: 20o OK
+	// Status: 200 OK
 	// Response Body:
 	// [
 	//	{
@@ -195,4 +195,34 @@ func Example_apiUserURLs_Test() {
 	//		"original_url": "http://example.test/4"
 	//	}
 	//]
+}
+
+// This example demonstrates a successful request to get service statistics via endpoint GET /api/internal/stats
+// Endpoint GET /api/internal/stats returns status 200 and count of stored users and shortened URLs
+func Example_apiInternalStats_Test() {
+	shortURLService := NewShortUrlsService(&shorturlinmemory.InMemoryShortURLRepository{}, publisher.NewAuditPublisher())
+
+	router := NewRouter(shortURLService)
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	// Making a request to GET /api/internal/stats endpoint with a list of URLs to be shortened in the request body
+	request, _ := http.NewRequest(http.MethodGet, testServer.URL+"/api/internal/stats", http.NoBody)
+	request.Header.Add("X-Real-IP", "127.0.0.1")
+
+	client := &http.Client{}
+
+	res, err := client.Do(request)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	defer res.Body.Close()
+
+	// Result:
+	// Status: 200 OK
+	// Response Body:
+	// {
+	//	"urls": 5,
+	//	"users": 2,
+	// }
 }

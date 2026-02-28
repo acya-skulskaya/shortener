@@ -3,29 +3,19 @@ package middleware
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
 	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/google/uuid"
+	authService "github.com/acya-skulskaya/shortener/internal/service/auth"
 	"go.uber.org/zap"
 )
-
-const (
-	SecretKey            = "x35k9f"
-	AuthCookieName       = "auth_shortener"
-	AuthContextKeyUserID = "userID"
-)
-
-type AuthContextKey string
 
 func CookieAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookieValue := ""
-		cookie, err := r.Cookie(AuthCookieName)
+		cookie, err := r.Cookie(authService.AuthCookieName)
 		if err != nil {
 			switch {
 			case errors.Is(err, http.ErrNoCookie):
@@ -41,7 +31,7 @@ func CookieAuth(next http.Handler) http.Handler {
 
 		if cookieValue == "" {
 			logger.Log.Info("auth cookie is empty, will create a new one")
-			token, err := buildJWTString()
+			token, err := authService.BuildJWTString()
 			if err != nil {
 				logger.Log.Debug("could not create token string", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
@@ -49,7 +39,7 @@ func CookieAuth(next http.Handler) http.Handler {
 			}
 
 			authCookie := http.Cookie{
-				Name:     AuthCookieName,
+				Name:     authService.AuthCookieName,
 				Value:    token,
 				Path:     "/",
 				HttpOnly: true,
@@ -61,7 +51,7 @@ func CookieAuth(next http.Handler) http.Handler {
 			cookieValue = token
 		}
 
-		userID, err := getUserID(cookieValue)
+		userID, err := authService.GetUserID(cookieValue)
 		if err != nil {
 			if errors.Is(err, errorsInternal.ErrTokenIsNotValid) {
 				w.WriteHeader(http.StatusUnauthorized)
@@ -78,56 +68,10 @@ func CookieAuth(next http.Handler) http.Handler {
 		}
 
 		logger.Log.Info("got user id", zap.String("userID", userID))
-		ctx := context.WithValue(r.Context(), AuthContextKey(AuthContextKeyUserID), userID)
+		ctx := context.WithValue(r.Context(), authService.AuthContextKey(authService.AuthContextKeyUserID), userID)
 		r = r.WithContext(ctx)
 
 		// передаём управление хендлеру
 		next.ServeHTTP(w, r)
 	})
-}
-
-type claims struct {
-	jwt.RegisteredClaims
-	UserID string
-}
-
-// buildJWTString создаёт токен и возвращает его в виде строки.
-func buildJWTString() (string, error) {
-	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — claims
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			// когда создан токен
-			IssuedAt: jwt.NewNumericDate(time.Now()),
-		},
-		UserID: uuid.New().String(),
-	})
-
-	// создаём строку токена
-	tokenString, err := token.SignedString([]byte(SecretKey))
-	if err != nil {
-		return "", err
-	}
-
-	// возвращаем строку токена
-	return tokenString, nil
-}
-
-func getUserID(tokenString string) (userID string, err error) {
-	claims := &claims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims,
-		func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
-			}
-			return []byte(SecretKey), nil
-		})
-	if err != nil {
-		return "", errorsInternal.ErrTokenIsNotValid
-	}
-
-	if !token.Valid {
-		return "", errorsInternal.ErrTokenIsNotValid
-	}
-
-	return claims.UserID, nil
 }

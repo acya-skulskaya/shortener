@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"encoding/json"
@@ -9,18 +9,10 @@ import (
 	"github.com/acya-skulskaya/shortener/internal/config"
 	errorsInternal "github.com/acya-skulskaya/shortener/internal/errors"
 	"github.com/acya-skulskaya/shortener/internal/logger"
-	"github.com/acya-skulskaya/shortener/internal/middleware"
 	models "github.com/acya-skulskaya/shortener/internal/model/json"
+	authService "github.com/acya-skulskaya/shortener/internal/service/auth"
 	"go.uber.org/zap"
 )
-
-type RequestData struct {
-	URL string `json:"url"`
-}
-
-type ResponseData struct {
-	Result string `json:"result"`
-}
 
 // apiShorten handles the HTTP request to shorten the URL in the request body in JSON format and return a URL with ID in JSON format
 // Endpoint: POST /api/shorten
@@ -31,6 +23,14 @@ type ResponseData struct {
 //   - 409 Conflict when the URL in the request was already shortened
 //   - 500 Internal Server Error on failure
 func (su *ShortUrlsService) apiShorten(res http.ResponseWriter, req *http.Request) {
+	type RequestData struct {
+		URL string `json:"url"`
+	}
+
+	type ResponseData struct {
+		Result string `json:"result"`
+	}
+
 	var requestData RequestData
 	if err := json.NewDecoder(req.Body).Decode(&requestData); err != nil {
 		logger.Log.Debug("could not parse request body",
@@ -42,13 +42,13 @@ func (su *ShortUrlsService) apiShorten(res http.ResponseWriter, req *http.Reques
 
 	url := requestData.URL
 	ctx := req.Context()
-	userID, ok := ctx.Value(middleware.AuthContextKey(middleware.AuthContextKeyUserID)).(string)
+	userID, ok := ctx.Value(authService.AuthContextKey(authService.AuthContextKeyUserID)).(string)
 	if !ok {
 		logger.Log.Debug("could nt get userID from context")
 		http.Error(res, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	id, err := su.Repo.Store(req.Context(), url, userID)
+	id, err := su.repo.Store(req.Context(), url, userID)
 
 	if len(id) == 0 {
 		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
